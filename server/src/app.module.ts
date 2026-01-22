@@ -9,6 +9,7 @@ import { PeopleModule } from './people/people.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { FormsModule } from './forms/forms.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EligibilityModule } from './eligibility/eligibility.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     FormsModule,
     DashboardModule,
     FormModule,
+    EligibilityModule,
   ],
   controllers: [AppController],
   providers: [AppService],
