@@ -117,7 +117,7 @@ export class FormRepository {
     const { data, error } = await this.supabaseService
       .getClient()
       .from('field_registry')
-      .select('*')
+      .select('field_id,title,prompt_template,type,validation,normalizers,aliases')
       .in('field_id', fieldIds);
 
     if (error) {
