@@ -47,29 +47,35 @@ Example Response:
 
 ### GET /form/requirements
 
-Return the list of `required_fields[].field_id` values for a given form.
+Return the `field_registry` rows for required fields that have not yet been captured for the applicant.
 
 Query Parameters:
 | Parameter | Type   | Required | Description                  |
 | --------- | ------ | -------- | ---------------------------- |
-| form_name | string | Yes      | Form name used to load policy |
+| form_name   | string | Yes      | Form name used to load policy |
+| phone_number | string | No       | Phone number used to resolve applicant |
 
 Response:
 
-- `200 OK` - Returns an array of `field_id` strings
+- `200 OK` - Returns an array of missing `field_registry` rows
 - `400 Bad Request` - Missing `form_name`
 - `404 Not Found` - No policy found matching the criteria
 
 Example Request:
 
 ```
-GET /form/requirements?form_name=employment_application
+GET /form/requirements?form_name=employment_application&phone_number=15551234567
 ```
 
 Example Response:
 
 ```json
-["applicant.full_name", "applicant.date_of_birth"]
+[
+  {
+    "field_id": "applicant.full_name",
+    "label": "Full name"
+  }
+]
 ```
 
 ## Environment Variables Required

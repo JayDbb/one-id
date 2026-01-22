@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GetFormDto } from './dto/get-form.dto';
 import { GetFormRequirementsDto } from './dto/get-form-requirements.dto';
+import { FieldRegistryRow } from './entities/field-registry.entity';
 import { FormRepository } from './form.repository';
 
 @Injectable()
@@ -16,7 +17,7 @@ export class FormService {
 
   async findFormRequirements(
     query: GetFormRequirementsDto,
-  ): Promise<string[] | null> {
+  ): Promise<FieldRegistryRow[] | null> {
     const policy = await this.formRepository.findFormPolicy(query.form_name);
 
     if (!policy) {
@@ -24,7 +25,33 @@ export class FormService {
     }
 
     const parsedPolicy = this.parsePolicy(policy);
-    return this.extractRequiredFieldIds(parsedPolicy);
+    const requiredFieldIds = this.extractRequiredFieldIds(parsedPolicy);
+
+    if (!query.phone_number) {
+      return this.formRepository.findFieldRegistryRowsByIds(requiredFieldIds);
+    }
+
+    const userId = await this.formRepository.findUserIdByPhoneNumber(
+      query.phone_number,
+    );
+
+    if (!userId) {
+      return this.formRepository.findFieldRegistryRowsByIds(requiredFieldIds);
+    }
+
+    const filledFieldIds =
+      await this.formRepository.findApplicantFieldIdsByUserId(userId);
+
+    if (filledFieldIds.length === 0) {
+      return this.formRepository.findFieldRegistryRowsByIds(requiredFieldIds);
+    }
+
+    const filledSet = new Set(filledFieldIds);
+    const missingFieldIds = requiredFieldIds.filter(
+      (fieldId) => !filledSet.has(fieldId),
+    );
+
+    return this.formRepository.findFieldRegistryRowsByIds(missingFieldIds);
   }
 
   private removeDuplicates(names: string[]): string[] {

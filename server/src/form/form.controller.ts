@@ -33,17 +33,17 @@ export class FormController {
   @HttpCode(HttpStatus.OK)
   async getFormRequirements(
     @Query() query: GetFormRequirementsDto,
-  ): Promise<string[]> {
+  ): Promise<Record<string, unknown>[]> {
     if (!query.form_name) {
       throw new BadRequestException('form_name is required');
     }
 
-    const fieldIds = await this.formService.findFormRequirements(query);
+    const fieldRows = await this.formService.findFormRequirements(query);
 
-    if (!fieldIds) {
+    if (!fieldRows) {
       throw new NotFoundException('No form policy found matching the criteria');
     }
 
-    return fieldIds;
+    return fieldRows;
   }
 }
