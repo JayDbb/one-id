@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiClient, Application } from "@/lib/api";
 
@@ -236,11 +237,28 @@ export function ApplicationsView() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: rowsPerPage }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-24 rounded-md" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : applications.length > 0 ? (
               applications.map((application) => (
                 <TableRow key={application.id}>
@@ -248,7 +266,7 @@ export function ApplicationsView() {
                     <div>
                       <div className="font-medium">{application.applicantName}</div>
                       <div className="text-sm text-muted-foreground">
-                        Citizen ID: {application.citizenId}
+                        ID: {application.citizenId}
                       </div>
                     </div>
                   </TableCell>

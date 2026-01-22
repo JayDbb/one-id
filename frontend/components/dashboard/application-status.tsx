@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api";
 
 export function ApplicationStatus() {
@@ -40,8 +41,27 @@ export function ApplicationStatus() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Loading...
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <div className="relative w-48 h-48">
+              <Skeleton className="w-48 h-48 rounded-full" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <Skeleton className="h-10 w-16 mx-auto" />
+                  <Skeleton className="h-3 w-20 mx-auto" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 w-full">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-4 w-8" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-6">
