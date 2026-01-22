@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ApplicantFactsRepository } from './applicant-facts.repository';
 import { CreateApplicantFactDto } from './dto/create-applicant-fact.dto';
 import { GetApplicantFactDto } from './dto/get-applicant-fact.dto';
@@ -23,13 +23,23 @@ export class ApplicantFactsService {
   ) {}
 
   async create(dto: CreateApplicantFactDto): Promise<ApplicantFact> {
+    // Look up user_id from the phone number
+    let userId = await this.applicantFactsRepository.findUserIdByPhoneNumber(
+      dto.phone_number,
+    );
+
+    // If no existing user_id found, generate a new one
+    if (!userId) {
+      userId = randomUUID();
+    }
+
     const data = {
       field_id: dto.field_id,
       value: dto.value,
       status: this.DEFAULT_VALUES.STATUS,
       source: this.DEFAULT_VALUES.SOURCE,
       is_current: this.DEFAULT_VALUES.IS_CURRENT,
-      user_id: dto.user_id ?? randomUUID(),
+      user_id: userId,
     };
 
     return this.applicantFactsRepository.create(data);

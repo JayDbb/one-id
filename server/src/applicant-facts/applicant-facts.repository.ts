@@ -39,6 +39,27 @@ export class ApplicantFactsRepository {
     return data as ApplicantFact;
   }
 
+  async findUserIdByPhoneNumber(phoneNumber: string): Promise<string | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applicant_facts')
+      .select('user_id')
+      .eq('field_id', 'applicant.phone_number')
+      .contains('value', [phoneNumber])
+      .limit(1)
+      .single();
+
+    if (error) {
+      // PGRST116 means no rows found
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw new Error(`Failed to fetch user_id: ${error.message}`);
+    }
+
+    return data?.user_id ?? null;
+  }
+
   async create(data: CreateApplicantFactData): Promise<ApplicantFact> {
     const { data: createdData, error } = await this.supabaseService
       .getClient()
