@@ -159,6 +159,41 @@ export class ApplicationsService {
     };
   }
 
+  async create(
+    formId: string,
+    applicantId: string | number,
+    status?: string,
+  ): Promise<any> {
+    // Verify form exists
+    const form = await this.applicationsRepository.findFormByName(formId);
+    if (!form) {
+      throw new Error(`Form not found: ${formId}`);
+    }
+
+    // Convert applicantId to number if it's a string UUID
+    let applicantIdValue: string | number = applicantId;
+    if (typeof applicantId === 'string') {
+      // Check if it's a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicantId);
+      if (!isUUID) {
+        // Try to parse as number
+        const numericId = parseInt(applicantId, 10);
+        if (!isNaN(numericId)) {
+          applicantIdValue = numericId;
+        }
+      }
+    }
+
+    // Create the application
+    const application = await this.applicationsRepository.create({
+      applicant: applicantIdValue,
+      form_id: formId,
+      status: status || 'submitted',
+    });
+
+    return application;
+  }
+
   private mapStatus(status: string): string {
     // Map database status to UI status
     const statusMap: Record<string, string> = {
