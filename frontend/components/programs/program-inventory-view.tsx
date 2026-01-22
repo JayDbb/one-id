@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,33 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-interface Program {
-  id: string;
-  name: string;
-  status: "active" | "upcoming" | "closed";
-  fieldRequirements: number;
-  currentApplications: number;
-  isCDF?: boolean;
-}
-
-const mockPrograms: Program[] = [
-  {
-    id: "HEART-NSTA-2024-001",
-    name: "HEART/NSTA Trust Online Application",
-    status: "active",
-    fieldRequirements: 20,
-    currentApplications: 5,
-  },
-  {
-    id: "CDF-needs-assessment-001",
-    name: "Needs Assessment Form",
-    status: "active",
-    fieldRequirements: 20,
-    currentApplications: 4,
-    isCDF: true,
-  },
-];
+import { apiClient, Program } from "@/lib/api";
 
 type FilterTab = "all" | "active" | "upcoming" | "closed";
 
@@ -54,11 +28,32 @@ export function ProgramInventoryView() {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiClient.getForms();
+        setPrograms(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch programs");
+        setPrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
 
   const filteredPrograms =
     activeTab === "all"
-      ? mockPrograms
-      : mockPrograms.filter((p) => p.status === activeTab);
+      ? programs
+      : programs.filter((p) => p.status === activeTab);
 
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
@@ -121,8 +116,15 @@ export function ProgramInventoryView() {
         </Button>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 shadow-sm shadow-red-500/5 dark:shadow-red-500/10 p-4">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10">
         <Table>
           <TableHeader>
             <TableRow>
@@ -133,13 +135,19 @@ export function ProgramInventoryView() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedPrograms.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : paginatedPrograms.length > 0 ? (
               paginatedPrograms.map((program) => (
                 <TableRow key={program.id}>
                   <TableCell>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{program.name}</span>
+                        <span className="font-medium">{program.shortName || program.name}</span>
                         {program.isCDF && (
                           <Badge className="bg-blue-500 text-white border border-blue-300 rounded-md px-3 py-1 text-xs font-medium">
                             CDF
@@ -162,7 +170,7 @@ export function ProgramInventoryView() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   No programs found
                 </TableCell>
               </TableRow>
@@ -172,7 +180,7 @@ export function ProgramInventoryView() {
       </div>
 
       {/* Pagination */}
-      {filteredPrograms.length > 0 && (
+      {!loading && filteredPrograms.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -246,7 +254,7 @@ export function ProgramInventoryView() {
           <span>SYSTEM: PROGRAM INVENTORY MASTER</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          TOTAL ACTIVE: {mockPrograms.filter((p) => p.status === "active").length} PROGRAMS & FORMS
+          TOTAL ACTIVE: {programs.filter((p) => p.status === "active").length} PROGRAMS & FORMS
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="h-2 w-2 rounded-full bg-green-600" />

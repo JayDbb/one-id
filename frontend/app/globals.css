@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --card: #ffffff;
+  --card: #f8fafc;
   --card-foreground: #171717;
   --popover: #ffffff;
   --popover-foreground: #171717;
@@ -50,7 +50,7 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
-  --card: #0a0a0a;
+  --card: #1a1a1a;
   --card-foreground: #ededed;
   --popover: #0a0a0a;
   --popover-foreground: #ededed;

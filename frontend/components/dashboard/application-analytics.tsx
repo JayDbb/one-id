@@ -1,16 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/api";
 
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const data = [12, 45, 38, 52, 28, 35, 42];
 
 export function ApplicationAnalytics() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const maxValue = Math.max(...data);
-  const total = data.reduce((a, b) => a + b, 0);
+  const [data, setData] = useState<number[]>([]);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const analytics = await apiClient.getDashboardAnalytics();
+        setData(analytics.data);
+        setLabels(analytics.labels);
+        setTotal(analytics.total);
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error);
+        // Fallback to empty data
+        setData([0, 0, 0, 0, 0, 0, 0]);
+        setLabels(days);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  const maxValue = data.length > 0 ? Math.max(...data, 1) : 1;
 
   return (
     <Card>
@@ -31,8 +55,9 @@ export function ApplicationAnalytics() {
 
               {/* Bars container */}
               <div className="flex-1 flex items-end justify-between gap-2 h-full">
-                {days.map((day, index) => {
-                  const height = (data[index] / maxValue) * 100;
+                {labels.map((day, index) => {
+                  const value = data[index] || 0;
+                  const height = (value / maxValue) * 100;
                   const isHovered = hoveredIndex === index;
 
                   return (
@@ -45,7 +70,7 @@ export function ApplicationAnalytics() {
                       {/* Tooltip */}
                       {isHovered && (
                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 px-3 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg shadow-lg text-xs font-medium whitespace-nowrap">
-                          {data[index]} applications
+                          {value} applications
                         </div>
                       )}
 
@@ -72,7 +97,7 @@ export function ApplicationAnalytics() {
 
             {/* Day labels - positioned below chart */}
             <div className="flex items-center justify-between gap-2 mt-1 pl-0">
-              {days.map((day, index) => {
+              {labels.map((day, index) => {
                 const isHovered = hoveredIndex === index;
                 return (
                   <div key={index} className="flex-1 flex justify-center">

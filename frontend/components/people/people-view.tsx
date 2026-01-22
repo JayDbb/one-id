@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Plus, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,123 +21,58 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-
-interface Person {
-  id: string;
-  fullName: string;
-  dateOfBirth: string;
-  constituency: string;
-  verificationStatus: "verified" | "pending" | "rejected";
-  formsApplied: number;
-  formsQualified: number;
-}
-
-const mockPeople: Person[] = [
-  {
-    id: "147-258",
-    fullName: "Michael T. Davis",
-    dateOfBirth: "Nov 14, 1987",
-    constituency: "Manchester Southern",
-    verificationStatus: "verified",
-    formsApplied: 3,
-    formsQualified: 2,
-  },
-  {
-    id: "654-789",
-    fullName: "Jennifer M. Brown",
-    dateOfBirth: "Apr 24, 1995",
-    constituency: "Manchester North Western",
-    verificationStatus: "verified",
-    formsApplied: 2,
-    formsQualified: 2,
-  },
-  {
-    id: "321-654",
-    fullName: "Robert K. Johnson",
-    dateOfBirth: "Dec 2, 1975",
-    constituency: "Manchester North Eastern",
-    verificationStatus: "verified",
-    formsApplied: 5,
-    formsQualified: 4,
-  },
-  {
-    id: "789-456",
-    fullName: "Maria G. Williams",
-    dateOfBirth: "Jul 17, 1988",
-    constituency: "Central Manchester",
-    verificationStatus: "verified",
-    formsApplied: 1,
-    formsQualified: 1,
-  },
-  {
-    id: "412-885",
-    fullName: "David O. Wellington",
-    dateOfBirth: "Mar 11, 1990",
-    constituency: "Manchester Southern",
-    verificationStatus: "verified",
-    formsApplied: 4,
-    formsQualified: 3,
-  },
-  {
-    id: "523-147",
-    fullName: "Sarah L. Anderson",
-    dateOfBirth: "Sep 5, 1992",
-    constituency: "Manchester North Western",
-    verificationStatus: "verified",
-    formsApplied: 2,
-    formsQualified: 1,
-  },
-  {
-    id: "689-321",
-    fullName: "James P. Martinez",
-    dateOfBirth: "Jan 22, 1985",
-    constituency: "Central Manchester",
-    verificationStatus: "verified",
-    formsApplied: 3,
-    formsQualified: 3,
-  },
-  {
-    id: "852-963",
-    fullName: "David Richards",
-    dateOfBirth: "Jun 8, 1989",
-    constituency: "Manchester North Eastern",
-    verificationStatus: "verified",
-    formsApplied: 1,
-    formsQualified: 0,
-  },
-];
+import { cn, formatTRN } from "@/lib/utils";
+import { apiClient, Person } from "@/lib/api";
 
 export function PeopleView() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [programFilter, setProgramFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [verificationFilter, setVerificationFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [people, setPeople] = useState<Person[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 8;
 
-  const filteredPeople = mockPeople.filter((person) => {
-    const matchesSearch =
-      person.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      person.id.includes(searchQuery);
-    const matchesVerification =
-      verificationFilter === "all" || person.verificationStatus === verificationFilter;
-    return matchesSearch && matchesVerification;
-  });
+  useEffect(() => {
+    const fetchPeople = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiClient.getPeople({
+          search: searchQuery || undefined,
+          division: divisionFilter !== "all" ? divisionFilter : undefined,
+          program: programFilter !== "all" ? programFilter : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          page: currentPage,
+          limit: itemsPerPage,
+        });
+        console.log(response.data, 'response.data');
+        setPeople(response.data);
+        setTotal(response.total || 0);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch people");
+        setPeople([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const totalPages = Math.ceil(filteredPeople.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedPeople = filteredPeople.slice(startIndex, endIndex);
+    fetchPeople();
+  }, [searchQuery, programFilter, statusFilter, divisionFilter, currentPage]);
+
+  const totalPages = Math.ceil(total / itemsPerPage);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold tracking-tight">People - Central Manchester</h1>
-        <p className="text-muted-foreground mt-2">Manchester • {filteredPeople.length} People</p>
+        <p className="text-muted-foreground mt-2">Manchester • {total} People</p>
       </div>
 
       {/* Search and Filters */}
@@ -179,15 +114,16 @@ export function PeopleView() {
             </SelectContent>
           </Select>
 
-          <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+          <Select value={divisionFilter} onValueChange={setDivisionFilter}>
             <SelectTrigger className="w-full sm:w-[150px]">
-              <SelectValue placeholder="Verification: All" />
+              <SelectValue placeholder="Division: All" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Verification: All</SelectItem>
-              <SelectItem value="verified">Verified</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="all">Division: All</SelectItem>
+              <SelectItem value="Central Manchester">Central Manchester</SelectItem>
+              <SelectItem value="Manchester Southern">Manchester Southern</SelectItem>
+              <SelectItem value="Manchester North Eastern">Manchester North Eastern</SelectItem>
+              <SelectItem value="Manchester North Western">Manchester North Western</SelectItem>
             </SelectContent>
           </Select>
 
@@ -198,34 +134,47 @@ export function PeopleView() {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 shadow-sm shadow-red-500/5 dark:shadow-red-500/10 p-4">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>FULL NAME</TableHead>
-              <TableHead>DATE OF BIRTH</TableHead>
+              <TableHead>PHONE NUMBER</TableHead>
               <TableHead>DIVISION</TableHead>
               <TableHead>FORMS APPLIED</TableHead>
               <TableHead>FORMS QUALIFIED</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedPeople.length > 0 ? (
-              paginatedPeople.map((person) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : people.length > 0 ? (
+              people.map((person, index) => (
                 <TableRow
-                  key={person.id}
+                  key={`person-${person.id || index}-${person.fullName || index}`}
                   className="cursor-pointer"
                   onClick={() => router.push(`/people/${person.id}`)}
                 >
                   <TableCell>
                     <div>
                       <div className="font-medium">{person.fullName}</div>
-                      <div className="text-sm text-muted-foreground">ID: {person.id}</div>
+                      <div className="text-sm text-muted-foreground">TRN: {formatTRN(person.trn || person.id)}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{person.dateOfBirth}</TableCell>
-                  <TableCell>{person.constituency}</TableCell>
+                  <TableCell>{person.phoneNumber || "N/A"}</TableCell>
+                  <TableCell>{person.division}</TableCell>
                   <TableCell>{person.formsApplied}</TableCell>
                   <TableCell>{person.formsQualified}</TableCell>
                 </TableRow>
@@ -242,11 +191,11 @@ export function PeopleView() {
       </div>
 
       {/* Pagination */}
-      {filteredPeople.length > 0 && (
+      {!loading && total > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredPeople.length)} of{" "}
-            {filteredPeople.length} results
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, total)} of{" "}
+            {total} results
           </div>
           <div className="flex items-center gap-2">
             <Button

@@ -1,9 +1,10 @@
 import { PersonDetailView } from "@/components/people/person-detail-view";
 
-export default function PersonDetailPage({
+export default async function PersonDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <PersonDetailView personId={params.id} />;
+  const { id } = await params;
+  return <PersonDetailView personId={id} />;
 }

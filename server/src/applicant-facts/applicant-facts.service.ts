@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ApplicantFactsRepository } from './applicant-facts.repository';
 import { CreateApplicantFactDto } from './dto/create-applicant-fact.dto';
 import { GetApplicantFactDto } from './dto/get-applicant-fact.dto';
@@ -64,6 +64,13 @@ export class ApplicantFactsService {
         );
       if (trnFact) {
         results.push(trnFact);
+      } else {
+        // Create TRN record if not found (but don't add to results)
+        await this.create({
+          field_id: this.FIELD_IDS.TRN,
+          value: [trn],
+          phone_number: phoneNumber ?? '',
+        });
       }
     }
 
@@ -74,8 +81,16 @@ export class ApplicantFactsService {
           this.FIELD_IDS.PHONE_NUMBER,
           phoneNumber,
         );
+
       if (phoneFact) {
         results.push(phoneFact);
+      } else {
+        // Create phone record if not found (but don't add to results)
+        await this.create({
+          field_id: this.FIELD_IDS.PHONE_NUMBER,
+          value: [phoneNumber],
+          phone_number: phoneNumber,
+        });
       }
     }
 

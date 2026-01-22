@@ -1,86 +1,92 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Pencil, MoreVertical, User, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ChevronRight, Pencil, MoreVertical, User, FileText, CheckCircle2, Clock, XCircle, Search, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatTRN } from "@/lib/utils";
+import { apiClient, PersonDetail } from "@/lib/api";
 
 interface PersonDetailProps {
   personId: string;
 }
 
-const mockPersonData = {
-  id: "147-258",
-  fullName: "Michael T. Davis",
-  dateOfBirth: "Nov 14, 1987",
-  age: 38,
-  gender: "Male",
-  nationality: "Jamaican",
-  nationalId: "147258369",
-  maritalStatus: "N/A",
-  occupation: "N/A",
-  constituency: "Manchester Southern",
-  location: "Porus",
-  residentialAddress: {
-    line1: "34 Willow Road",
-    line2: "34 Willow Road, Porus, Manchester Southern",
-  },
-  primaryPhone: "+1 (876) 555-7890",
-  emailAddress: "N/A",
-  verificationStatus: "verified" as const,
-  applications: [
-    {
-      id: "APP-2024-001",
-      formName: "Scholarship Program 2024",
-      status: "approved",
-      submittedDate: "Oct 15, 2024",
-      decisionDate: "Nov 1, 2024",
-    },
-    {
-      id: "APP-2024-045",
-      formName: "Housing Grant Application",
-      status: "pending",
-      submittedDate: "Nov 20, 2024",
-      decisionDate: null,
-    },
-    {
-      id: "APP-2024-012",
-      formName: "Education Support Fund",
-      status: "rejected",
-      submittedDate: "Sep 10, 2024",
-      decisionDate: "Sep 25, 2024",
-    },
-  ],
-  qualifications: [
-    {
-      programName: "Scholarship Program 2024",
-      qualified: true,
-      reason: "Meets all eligibility criteria",
-    },
-    {
-      programName: "Housing Grant Application",
-      qualified: true,
-      reason: "Income below threshold, resident for 5+ years",
-    },
-    {
-      programName: "Education Support Fund",
-      qualified: false,
-      reason: "Age requirement not met",
-    },
-    {
-      programName: "Healthcare Subsidy",
-      qualified: true,
-      reason: "Eligible based on constituency and income",
-    },
-  ],
-};
-
 export function PersonDetailView({ personId }: PersonDetailProps) {
   const router = useRouter();
-  const person = mockPersonData; // In real app, fetch by personId
+  const [person, setPerson] = useState<PersonDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [applicationsSearch, setApplicationsSearch] = useState("");
+  const [qualificationsSearch, setQualificationsSearch] = useState("");
+
+  console.log('PersonDetailView rendered with personId:', personId);
+
+  useEffect(() => {
+    const fetchPerson = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('Fetching person with ID:', personId);
+        const data = await apiClient.getPerson(personId);
+        console.log('Person data received:', data);
+        setPerson(data);
+      } catch (err) {
+        console.error('Error fetching person:', err);
+        setError(err instanceof Error ? err.message : "Failed to fetch person details");
+        setPerson(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (personId) {
+      fetchPerson();
+    } else {
+      setError("No person ID provided");
+      setLoading(false);
+    }
+  }, [personId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 shadow-sm shadow-red-500/5 dark:shadow-red-500/10 p-4">
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium">Error loading person</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-2">{error}</p>
+          <p className="text-xs text-red-500 dark:text-red-400 mt-2">Person ID: {personId}</p>
+        </div>
+        <Button onClick={() => router.push('/people')} variant="outline">
+          Back to People
+        </Button>
+      </div>
+    );
+  }
+
+  if (!person) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl bg-yellow-50 dark:bg-yellow-900/20 shadow-sm shadow-yellow-500/5 dark:shadow-yellow-500/10 p-4">
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">Person not found</p>
+          <p className="text-xs text-yellow-500 dark:text-yellow-400 mt-2">Person ID: {personId}</p>
+        </div>
+        <Button onClick={() => router.push('/people')} variant="outline">
+          Back to People
+        </Button>
+      </div>
+    );
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -132,7 +138,7 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
           <div>
             <h1 className="text-4xl font-bold tracking-tight">{person.fullName}</h1>
             <p className="text-muted-foreground mt-2">
-              ID: {person.id} • {person.location} • {person.constituency}
+              TRN: {formatTRN(person.trn || person.id)} • {person.location || person.division} • {person.division}
             </p>
           </div>
         </div>
@@ -156,6 +162,10 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">TRN</p>
+                <p className="text-sm font-medium">{formatTRN(person.trn) || "N/A"}</p>
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Date of Birth</p>
                 <p className="text-sm font-medium">{person.dateOfBirth}</p>
@@ -193,8 +203,8 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
           <CardContent className="space-y-3">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Residential Address</p>
-              <p className="text-sm font-medium">{person.residentialAddress.line1}</p>
-              <p className="text-xs text-muted-foreground">{person.residentialAddress.line2}</p>
+              <p className="text-sm font-medium">{person.residentialAddress?.line1}</p>
+              <p className="text-xs text-muted-foreground">{person.residentialAddress?.line2}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -209,44 +219,138 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
           </CardContent>
         </Card>
 
-        {/* Applications - Full width, no box */}
+        {/* Applications - Full width */}
         <div className="lg:col-span-4 space-y-4">
-          <h2 className="text-sm font-semibold">APPLICATIONS</h2>
-          <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
-            {person.applications.map((app, index) => (
-              <div
-                key={index}
-                className="flex flex-col p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(app.status)}
-                  </div>
-                </div>
-                <p className="font-medium text-sm mb-2 line-clamp-2">{app.formName}</p>
-                <Badge
-                  className={cn(
-                    "text-xs font-medium w-fit mb-2",
-                    getStatusBadge(app.status)
-                  )}
-                >
-                  {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                </Badge>
-                <p className="text-xs text-muted-foreground mb-1">
-                  {app.id}
-                </p>
-                <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p>Submitted: {app.submittedDate}</p>
-                  {app.decisionDate && (
-                    <p>Decision: {app.decisionDate}</p>
-                  )}
-                </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">APPLICATIONS SUBMITTED</h2>
+            {person.applications.length > 0 && (
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search applications..."
+                  className="pl-9 h-9"
+                  value={applicationsSearch}
+                  onChange={(e) => setApplicationsSearch(e.target.value)}
+                />
               </div>
-            ))}
+            )}
           </div>
+          {person.applications.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm font-medium text-muted-foreground">No applications submitted</p>
+                <p className="text-xs text-muted-foreground mt-1">This person has not submitted any applications yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              {person.applications
+                .filter((app) =>
+                  app.formName.toLowerCase().includes(applicationsSearch.toLowerCase()) ||
+                  app.status.toLowerCase().includes(applicationsSearch.toLowerCase())
+                )
+                .map((app, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col p-4 rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(app.status)}
+                      </div>
+                    </div>
+                    <p className="font-medium text-sm mb-2 line-clamp-2">{app.formName}</p>
+                    <Badge
+                      className={cn(
+                        "text-xs font-medium w-fit mb-2",
+                        getStatusBadge(app.status)
+                      )}
+                    >
+                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {app.id}
+                    </p>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      <p>Submitted: {app.submittedDate}</p>
+                      {app.decisionDate && (
+                        <p>Decision: {app.decisionDate}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* Qualified Applications - Full width */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">QUALIFIED FOR</h2>
+            {person.qualifications.length > 0 && (
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search programs..."
+                  className="pl-9 h-9"
+                  value={qualificationsSearch}
+                  onChange={(e) => setQualificationsSearch(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          {person.qualifications.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <CheckCircle2 className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm font-medium text-muted-foreground">No qualifications found</p>
+                <p className="text-xs text-muted-foreground mt-1">This person does not qualify for any programs at this time.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              {person.qualifications
+                .filter((qual) =>
+                  qual.programName.toLowerCase().includes(qualificationsSearch.toLowerCase())
+                )
+                .map((qual, index) => (
+                  <Card key={index} className="hover:shadow-md transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                          <FolderKanban className="h-4 w-4 text-green-600" />
+                        </div>
+                        {qual.qualified ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        )}
+                      </div>
+                      <p className="font-medium text-sm mb-2">{qual.programName}</p>
+                      <Badge
+                        className={cn(
+                          "text-xs font-medium w-fit mb-2",
+                          qual.qualified
+                            ? "bg-green-600 text-white"
+                            : "bg-red-500 text-white"
+                        )}
+                      >
+                        {qual.qualified ? "Qualified" : "Not Qualified"}
+                      </Badge>
+                      {qual.reason && (
+                        <p className="text-xs text-muted-foreground mt-2">{qual.reason}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
