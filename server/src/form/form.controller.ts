@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   HttpCode,
@@ -8,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { FormService } from './form.service';
 import { GetFormDto } from './dto/get-form.dto';
+import { GetFormRequirementsDto } from './dto/get-form-requirements.dto';
 
 @Controller('form')
 export class FormController {
@@ -25,5 +27,23 @@ export class FormController {
     }
 
     return results;
+  }
+
+  @Get('requirements')
+  @HttpCode(HttpStatus.OK)
+  async getFormRequirements(
+    @Query() query: GetFormRequirementsDto,
+  ): Promise<Record<string, unknown>[]> {
+    if (!query.form_name) {
+      throw new BadRequestException('form_name is required');
+    }
+
+    const fieldRows = await this.formService.findFormRequirements(query);
+
+    if (!fieldRows) {
+      throw new NotFoundException('No form policy found matching the criteria');
+    }
+
+    return fieldRows;
   }
 }
