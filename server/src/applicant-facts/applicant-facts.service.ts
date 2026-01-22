@@ -64,27 +64,34 @@ export class ApplicantFactsService {
         );
       if (trnFact) {
         results.push(trnFact);
+      } else {
+        // Create TRN record if not found (but don't add to results)
+        await this.create({
+          field_id: this.FIELD_IDS.TRN,
+          value: [trn],
+          phone_number: phoneNumber ?? '',
+        });
       }
     }
 
     // Query by phone number if provided
     if (phoneNumber) {
-      let phoneFact =
+      const phoneFact =
         await this.applicantFactsRepository.findOneByFieldAndValue(
           this.FIELD_IDS.PHONE_NUMBER,
           phoneNumber,
         );
 
-      // If no phone fact exists, create one with a new user_id
-      if (!phoneFact) {
-        phoneFact = await this.create({
+      if (phoneFact) {
+        results.push(phoneFact);
+      } else {
+        // Create phone record if not found (but don't add to results)
+        await this.create({
           field_id: this.FIELD_IDS.PHONE_NUMBER,
           value: [phoneNumber],
           phone_number: phoneNumber,
         });
       }
-
-      results.push(phoneFact);
     }
 
     // Remove duplicates based on id
