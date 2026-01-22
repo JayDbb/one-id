@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Filter, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,130 +21,76 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-interface Application {
-  id: string;
-  applicantName: string;
-  citizenId: string;
-  applicationName: string;
-  dateApplied: string;
-  constituency: string;
-  status: "under-review" | "approved" | "draft" | "declined" | "applied";
-}
-
-const mockApplications: Application[] = [
-  {
-    id: "1",
-    applicantName: "John Doe",
-    citizenId: "X",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 14, 2024",
-    constituency: "Central Manchester",
-    status: "under-review",
-  },
-  {
-    id: "2",
-    applicantName: "Jane Smith",
-    citizenId: "Y",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 15, 2024",
-    constituency: "Manchester North Eastern",
-    status: "approved",
-  },
-  {
-    id: "3",
-    applicantName: "Bob Johnson",
-    citizenId: "Z",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 16, 2024",
-    constituency: "Central Manchester",
-    status: "draft",
-  },
-  {
-    id: "4",
-    applicantName: "Alice Williams",
-    citizenId: "A",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 17, 2024",
-    constituency: "Manchester North Eastern",
-    status: "declined",
-  },
-  {
-    id: "5",
-    applicantName: "Charlie Brown",
-    citizenId: "B",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 18, 2024",
-    constituency: "Central Manchester",
-    status: "applied",
-  },
-  {
-    id: "6",
-    applicantName: "Diana Prince",
-    citizenId: "C",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 19, 2024",
-    constituency: "Manchester North Eastern",
-    status: "approved",
-  },
-  {
-    id: "7",
-    applicantName: "Edward Norton",
-    citizenId: "D",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 20, 2024",
-    constituency: "Central Manchester",
-    status: "under-review",
-  },
-  {
-    id: "8",
-    applicantName: "Fiona Apple",
-    citizenId: "E",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 21, 2024",
-    constituency: "Manchester North Eastern",
-    status: "applied",
-  },
-  {
-    id: "9",
-    applicantName: "George Lucas",
-    citizenId: "F",
-    applicationName: "HEART/NSTA Trust Online Application",
-    dateApplied: "Jan 22, 2024",
-    constituency: "Central Manchester",
-    status: "draft",
-  },
-];
+import { apiClient, Application } from "@/lib/api";
 
 export function ApplicationsView() {
   const [statusFilter, setStatusFilter] = useState("all");
-  const [constituencyFilter, setConstituencyFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState("all");
   const [programFilter, setProgramFilter] = useState("all");
   const [dateRange, setDateRange] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(5);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredApplications = mockApplications.filter((app) => {
-    if (statusFilter !== "all" && app.status !== statusFilter) return false;
-    if (constituencyFilter !== "all" && app.constituency !== constituencyFilter) return false;
-    return true;
-  });
+  useEffect(() => {
+    const fetchApplications = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Map UI status to API status
+        const apiStatus = statusFilter !== "all" ? {
+          "under-review": "pending",
+          "approved": "approved",
+          "draft": "draft",
+          "declined": "declined",
+          "applied": "submitted",
+        }[statusFilter] || statusFilter : undefined;
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedApplications = filteredApplications.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredApplications.length / rowsPerPage);
+        const response = await apiClient.getApplications({
+          status: apiStatus,
+          division: divisionFilter !== "all" ? divisionFilter : undefined,
+          form_id: programFilter !== "all" ? programFilter : undefined,
+          dateFrom: dateRange ? dateRange.split(" - ")[0] : undefined,
+          dateTo: dateRange ? dateRange.split(" - ")[1] : undefined,
+          page: currentPage,
+          limit: rowsPerPage,
+        });
+        setApplications(response.data);
+        setTotal(response.total || 0);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch applications");
+        setApplications([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, [statusFilter, divisionFilter, programFilter, dateRange, currentPage, rowsPerPage]);
+
+  const totalPages = Math.ceil(total / rowsPerPage);
 
   const clearFilters = () => {
     setStatusFilter("all");
-    setConstituencyFilter("all");
+    setDivisionFilter("all");
     setProgramFilter("all");
     setDateRange("");
     setCurrentPage(1);
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    // Map backend status to UI status
+    const statusMap: Record<string, string> = {
+      "pending": "under-review",
+      "submitted": "applied",
+    };
+    const uiStatus = statusMap[status] || status;
+
+    switch (uiStatus) {
       case "under-review":
         return "bg-orange-500 text-white border border-orange-300";
       case "approved":
@@ -161,7 +107,14 @@ export function ApplicationsView() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
+    // Map backend status to UI status
+    const statusMap: Record<string, string> = {
+      "pending": "under-review",
+      "submitted": "applied",
+    };
+    const uiStatus = statusMap[status] || status;
+
+    switch (uiStatus) {
       case "under-review":
         return "Under Review";
       case "approved":
@@ -177,7 +130,6 @@ export function ApplicationsView() {
     }
   };
 
-  const constituencies = Array.from(new Set(mockApplications.map((app) => app.constituency)));
 
   return (
     <div className="space-y-6">
@@ -210,20 +162,14 @@ export function ApplicationsView() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Constituency:</span>
-            <Select value={constituencyFilter} onValueChange={setConstituencyFilter}>
-              <SelectTrigger className="w-48 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {constituencies.map((constituency) => (
-                  <SelectItem key={constituency} value={constituency}>
-                    {constituency}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Division:</span>
+            <Input
+              type="text"
+              placeholder="Filter by division"
+              value={divisionFilter !== "all" ? divisionFilter : ""}
+              onChange={(e) => setDivisionFilter(e.target.value || "all")}
+              className="w-48 h-9"
+            />
           </div>
 
           <div className="flex items-center gap-2">
@@ -265,25 +211,38 @@ export function ApplicationsView() {
         </div>
 
         <div className="text-sm text-muted-foreground">
-          {filteredApplications.length} of {mockApplications.length} applications
+          {total} of {total} applications
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 shadow-sm shadow-red-500/5 dark:shadow-red-500/10 p-4">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>APPLICANT NAME</TableHead>
               <TableHead>APPLICATION NAME</TableHead>
               <TableHead>DATE APPLIED</TableHead>
-              <TableHead>CONSTITUENCY</TableHead>
+              <TableHead>DIVISION</TableHead>
               <TableHead>APPLICATION STATUS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedApplications.length > 0 ? (
-              paginatedApplications.map((application) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : applications.length > 0 ? (
+              applications.map((application) => (
                 <TableRow key={application.id}>
                   <TableCell>
                     <div>
@@ -295,7 +254,7 @@ export function ApplicationsView() {
                   </TableCell>
                   <TableCell>{application.applicationName}</TableCell>
                   <TableCell>{application.dateApplied}</TableCell>
-                  <TableCell>{application.constituency}</TableCell>
+                  <TableCell>{application.division}</TableCell>
                   <TableCell>
                     <Badge className={cn("rounded-md px-3 py-1 text-xs font-medium", getStatusBadge(application.status))}>
                       {getStatusLabel(application.status)}
@@ -315,7 +274,7 @@ export function ApplicationsView() {
       </div>
 
       {/* Pagination */}
-      {filteredApplications.length > 0 && (
+      {!loading && total > 0 && (
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
             <Button

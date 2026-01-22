@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "./stat-card";
@@ -5,8 +8,32 @@ import { ApplicationAnalytics } from "./application-analytics";
 import { RecentApplications } from "./recent-applications";
 import { ApplicationStatus } from "./application-status";
 import { ActiveForms } from "./active-forms";
+import { apiClient } from "@/lib/api";
 
 export function DashboardView() {
+  const [stats, setStats] = useState({
+    totalApplications: 0,
+    activeForms: 0,
+    totalApplicants: 0,
+    pendingApplications: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await apiClient.getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -33,23 +60,23 @@ export function DashboardView() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Applications"
-          value="156"
-          subtitle="12 Increased from last week"
+          value={loading ? "..." : stats.totalApplications.toString()}
+          subtitle="All submitted applications"
           highlighted
         />
         <StatCard
           title="Active Forms"
-          value="2"
-          subtitle="1 New form this month"
+          value={loading ? "..." : stats.activeForms.toString()}
+          subtitle="Currently active forms"
         />
         <StatCard
           title="Total Applicants"
-          value="258"
-          subtitle="8 Increased from last week"
+          value={loading ? "..." : stats.totalApplicants.toString()}
+          subtitle="Registered applicants"
         />
         <StatCard
           title="Pending Review"
-          value="40"
+          value={loading ? "..." : stats.pendingApplications.toString()}
           subtitle="Requires attention"
         />
       </div>
