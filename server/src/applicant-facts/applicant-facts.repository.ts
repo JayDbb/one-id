@@ -2,6 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ApplicantFact } from './entities/applicant-fact.entity';
 
+export interface CreateApplicantFactData {
+  field_id: string;
+  value: string[];
+  status: string;
+  source: string;
+  is_current: boolean;
+  user_id: string;
+}
+
 @Injectable()
 export class ApplicantFactsRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
@@ -28,5 +37,20 @@ export class ApplicantFactsRepository {
     }
 
     return data as ApplicantFact;
+  }
+
+  async create(data: CreateApplicantFactData): Promise<ApplicantFact> {
+    const { data: createdData, error } = await this.supabaseService
+      .getClient()
+      .from('applicant_facts')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create applicant fact: ${error.message}`);
+    }
+
+    return createdData as ApplicantFact;
   }
 }

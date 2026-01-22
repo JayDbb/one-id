@@ -7,4 +7,5 @@ export interface ApplicantFact {
   updated_at: string;
   is_current: boolean;
   value: string[];
+  user_id: string;
 }
