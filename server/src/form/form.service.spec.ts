@@ -11,7 +11,7 @@ describe('FormService', () => {
         FormService,
         {
           provide: FormRepository,
-          useValue: { findFormNames: jest.fn() },
+          useValue: { findFormNames: jest.fn(), findFormPolicy: jest.fn() },
         },
       ],
     }).compile();

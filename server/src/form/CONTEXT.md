@@ -2,7 +2,7 @@
 
 ## Overview
 
-This module exposes form names from the Supabase database.
+This module exposes form names and form policies from the Supabase database.
 
 ## Database
 
@@ -45,6 +45,33 @@ Example Response:
 ["employment_application", "visa_intake"]
 ```
 
+### GET /form/requirements
+
+Return the list of `required_fields[].field_id` values for a given form.
+
+Query Parameters:
+| Parameter | Type   | Required | Description                  |
+| --------- | ------ | -------- | ---------------------------- |
+| form_name | string | Yes      | Form name used to load policy |
+
+Response:
+
+- `200 OK` - Returns an array of `field_id` strings
+- `400 Bad Request` - Missing `form_name`
+- `404 Not Found` - No policy found matching the criteria
+
+Example Request:
+
+```
+GET /form/requirements?form_name=employment_application
+```
+
+Example Response:
+
+```json
+["applicant.full_name", "applicant.date_of_birth"]
+```
+
 ## Environment Variables Required
 
 ```
@@ -64,7 +91,8 @@ form/
 ├── form.service.ts           # Business logic layer
 ├── form.service.spec.ts      # Service tests
 ├── dto/
-│   └── get-form.dto.ts       # Request validation DTO
+│   ├── get-form.dto.ts       # Request validation DTO
+│   └── get-form-requirements.dto.ts # Request validation DTO
 └── entities/
     └── form-name.entity.ts   # TypeScript interface for DB rows
 ```
@@ -81,6 +109,7 @@ This module follows a layered architecture:
 2. **Service** (`form.service.ts`)
    - Contains business logic
    - Deduplicates form names
+   - Parses policy JSON when needed
    - Delegates data access to the repository layer
 
 3. **Repository** (`form.repository.ts`)
