@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ApplicantFactsRepository } from './applicant-facts.repository';
 import { CreateApplicantFactDto } from './dto/create-applicant-fact.dto';
 import { GetApplicantFactDto } from './dto/get-applicant-fact.dto';
@@ -69,14 +69,22 @@ export class ApplicantFactsService {
 
     // Query by phone number if provided
     if (phoneNumber) {
-      const phoneFact =
+      let phoneFact =
         await this.applicantFactsRepository.findOneByFieldAndValue(
           this.FIELD_IDS.PHONE_NUMBER,
           phoneNumber,
         );
-      if (phoneFact) {
-        results.push(phoneFact);
+
+      // If no phone fact exists, create one with a new user_id
+      if (!phoneFact) {
+        phoneFact = await this.create({
+          field_id: this.FIELD_IDS.PHONE_NUMBER,
+          value: [phoneNumber],
+          phone_number: phoneNumber,
+        });
       }
+
+      results.push(phoneFact);
     }
 
     // Remove duplicates based on id
