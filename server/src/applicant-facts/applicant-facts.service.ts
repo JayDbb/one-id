@@ -1,5 +1,7 @@
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { ApplicantFactsRepository } from './applicant-facts.repository';
+import { CreateApplicantFactDto } from './dto/create-applicant-fact.dto';
 import { GetApplicantFactDto } from './dto/get-applicant-fact.dto';
 import { ApplicantFact } from './entities/applicant-fact.entity';
 
@@ -10,9 +12,28 @@ export class ApplicantFactsService {
     PHONE_NUMBER: 'applicant.phone_number',
   };
 
+  private readonly DEFAULT_VALUES = {
+    STATUS: 'pending',
+    SOURCE: 'whatsapp',
+    IS_CURRENT: true,
+  };
+
   constructor(
     private readonly applicantFactsRepository: ApplicantFactsRepository,
   ) {}
+
+  async create(dto: CreateApplicantFactDto): Promise<ApplicantFact> {
+    const data = {
+      field_id: dto.field_id,
+      value: dto.value,
+      status: this.DEFAULT_VALUES.STATUS,
+      source: this.DEFAULT_VALUES.SOURCE,
+      is_current: this.DEFAULT_VALUES.IS_CURRENT,
+      user_id: dto.user_id ?? randomUUID(),
+    };
+
+    return this.applicantFactsRepository.create(data);
+  }
 
   async findByQuery(query: GetApplicantFactDto): Promise<ApplicantFact[]> {
     const { trn, phoneNumber } = query;
