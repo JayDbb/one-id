@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApplicantFactsModule } from './applicant-facts/applicant-facts.module';
+import { FormModule } from './form/form.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { PeopleModule } from './people/people.module';
 import { ApplicationsModule } from './applications/applications.module';
@@ -21,6 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ApplicationsModule,
     FormsModule,
     DashboardModule,
+    FormModule,
   ],
   controllers: [AppController],
   providers: [AppService],
