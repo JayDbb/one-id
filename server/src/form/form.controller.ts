@@ -34,8 +34,8 @@ export class FormController {
   async getFormRequirements(
     @Query() query: GetFormRequirementsDto,
   ): Promise<Record<string, unknown>[]> {
-    if (!query.form_name) {
-      throw new BadRequestException('form_name is required');
+    if (!query.form_name && !query.phone_number) {
+      throw new BadRequestException('form_name or phone_number is required');
     }
 
     const fieldRows = await this.formService.findFormRequirements(query);

@@ -18,14 +18,20 @@ export class FormService {
   async findFormRequirements(
     query: GetFormRequirementsDto,
   ): Promise<FieldRegistryRow[] | null> {
-    const policy = await this.formRepository.findFormPolicy(query.form_name);
+    let requiredFieldIds: string[] = [];
 
-    if (!policy) {
-      return null;
+    if (query.form_name) {
+      const policy = await this.formRepository.findFormPolicy(query.form_name);
+
+      if (!policy) {
+        return null;
+      }
+
+      const parsedPolicy = this.parsePolicy(policy);
+      requiredFieldIds = this.extractRequiredFieldIds(parsedPolicy);
+    } else {
+      requiredFieldIds = await this.formRepository.findAllFieldRegistryFieldIds();
     }
-
-    const parsedPolicy = this.parsePolicy(policy);
-    const requiredFieldIds = this.extractRequiredFieldIds(parsedPolicy);
 
     if (!query.phone_number) {
       return this.formRepository.findFieldRegistryRowsByIds(requiredFieldIds);

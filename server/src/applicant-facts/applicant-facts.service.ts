@@ -22,20 +22,37 @@ export class ApplicantFactsService {
     private readonly applicantFactsRepository: ApplicantFactsRepository,
   ) {}
 
+  /**
+   * Sanitizes a phone number by removing all non-numeric characters
+   */
+  private sanitizePhoneNumber(phoneNumber: string): string {
+    return phoneNumber.replace(/\D/g, '');
+  }
+
   async create(dto: CreateApplicantFactDto): Promise<ApplicantFact> {
+    // Sanitize the phone number
+    const cleanPhoneNumber = this.sanitizePhoneNumber(dto.phone_number);
+
     // Look up user_id from the phone number
-    let userId = await this.applicantFactsRepository.findUserIdByPhoneNumber(
-      dto.phone_number,
-    );
+    let userId =
+      await this.applicantFactsRepository.findUserIdByPhoneNumber(
+        cleanPhoneNumber,
+      );
 
     // If no existing user_id found, generate a new one
     if (!userId) {
       userId = randomUUID();
     }
 
+    // If the field is phone_number, sanitize the value as well
+    const cleanValue =
+      dto.field_id === this.FIELD_IDS.PHONE_NUMBER
+        ? dto.value.map((v) => this.sanitizePhoneNumber(v))
+        : dto.value;
+
     const data = {
       field_id: dto.field_id,
-      value: dto.value,
+      value: cleanValue,
       status: this.DEFAULT_VALUES.STATUS,
       source: this.DEFAULT_VALUES.SOURCE,
       is_current: this.DEFAULT_VALUES.IS_CURRENT,
@@ -64,13 +81,6 @@ export class ApplicantFactsService {
         );
       if (trnFact) {
         results.push(trnFact);
-      } else {
-        // Create TRN record if not found (but don't add to results)
-        await this.create({
-          field_id: this.FIELD_IDS.TRN,
-          value: [trn],
-          phone_number: phoneNumber ?? '',
-        });
       }
     }
 
@@ -81,16 +91,8 @@ export class ApplicantFactsService {
           this.FIELD_IDS.PHONE_NUMBER,
           phoneNumber,
         );
-
       if (phoneFact) {
         results.push(phoneFact);
-      } else {
-        // Create phone record if not found (but don't add to results)
-        await this.create({
-          field_id: this.FIELD_IDS.PHONE_NUMBER,
-          value: [phoneNumber],
-          phone_number: phoneNumber,
-        });
       }
     }
 
