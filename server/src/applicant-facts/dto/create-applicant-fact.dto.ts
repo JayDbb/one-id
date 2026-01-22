@@ -1,10 +1,4 @@
-import {
-  IsArray,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateApplicantFactDto {
   @IsNotEmpty()
@@ -16,7 +10,7 @@ export class CreateApplicantFactDto {
   @IsString({ each: true })
   value: string[];
 
-  @IsOptional()
-  @IsUUID()
-  user_id?: string;
+  @IsNotEmpty()
+  @IsString()
+  phone_number: string;
 }
