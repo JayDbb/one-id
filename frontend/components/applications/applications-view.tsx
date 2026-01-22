@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, Calendar, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
+import { Filter, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -146,17 +146,17 @@ export function ApplicationsView() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "under-review":
-        return "bg-orange-500 text-white";
+        return "bg-orange-500 text-white border border-orange-300";
       case "approved":
-        return "bg-green-600 text-white";
+        return "bg-green-500 text-white border border-green-300";
       case "draft":
-        return "bg-gray-500 text-white";
+        return "bg-gray-600 text-white border border-gray-400";
       case "declined":
-        return "bg-red-500 text-white";
+        return "bg-red-500 text-white border border-red-300";
       case "applied":
-        return "bg-blue-600 text-white";
+        return "bg-blue-500 text-white border border-blue-300";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border border-border";
     }
   };
 
@@ -279,7 +279,6 @@ export function ApplicationsView() {
               <TableHead>DATE APPLIED</TableHead>
               <TableHead>CONSTITUENCY</TableHead>
               <TableHead>APPLICATION STATUS</TableHead>
-              <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -298,33 +297,15 @@ export function ApplicationsView() {
                   <TableCell>{application.dateApplied}</TableCell>
                   <TableCell>{application.constituency}</TableCell>
                   <TableCell>
-                    <Badge className={cn("text-xs", getStatusBadge(application.status))}>
+                    <Badge className={cn("rounded-md px-3 py-1 text-xs font-medium", getStatusBadge(application.status))}>
                       {getStatusLabel(application.status)}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="link"
-                        className="h-auto p-0 text-blue-600"
-                        size="sm"
-                      >
-                        {application.status === "under-review" ? "Review" : "View"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No applications found
                 </TableCell>
               </TableRow>

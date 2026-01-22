@@ -68,13 +68,13 @@ export function ProgramInventoryView() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-600 text-white";
+        return "bg-green-500 text-white border border-green-300";
       case "upcoming":
-        return "bg-yellow-500 text-white";
+        return "bg-yellow-500 text-white border border-yellow-300";
       case "closed":
-        return "bg-gray-500 text-white";
+        return "bg-gray-600 text-white border border-gray-400";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border border-border";
     }
   };
 
@@ -130,7 +130,6 @@ export function ProgramInventoryView() {
               <TableHead>STATUS</TableHead>
               <TableHead>FIELD REQUIREMENTS</TableHead>
               <TableHead>CURRENT APPLICATIONS</TableHead>
-              <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,7 +141,7 @@ export function ProgramInventoryView() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{program.name}</span>
                         {program.isCDF && (
-                          <Badge className="bg-blue-600 text-white text-xs">
+                          <Badge className="bg-blue-500 text-white border border-blue-300 rounded-md px-3 py-1 text-xs font-medium">
                             CDF
                           </Badge>
                         )}
@@ -153,17 +152,12 @@ export function ProgramInventoryView() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("text-xs", getStatusBadge(program.status))}>
+                    <Badge className={cn("rounded-md px-3 py-1 text-xs font-medium", getStatusBadge(program.status))}>
                       {program.status.toUpperCase()}
                     </Badge>
                   </TableCell>
                   <TableCell>{program.fieldRequirements} Requirements</TableCell>
                   <TableCell>{program.currentApplications}</TableCell>
-                  <TableCell>
-                    <Button variant="link" className="h-auto p-0 text-blue-600">
-                      Configure
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (

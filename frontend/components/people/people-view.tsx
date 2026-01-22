@@ -30,6 +30,8 @@ interface Person {
   dateOfBirth: string;
   constituency: string;
   verificationStatus: "verified" | "pending" | "rejected";
+  formsApplied: number;
+  formsQualified: number;
 }
 
 const mockPeople: Person[] = [
@@ -39,6 +41,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Nov 14, 1987",
     constituency: "Manchester Southern",
     verificationStatus: "verified",
+    formsApplied: 3,
+    formsQualified: 2,
   },
   {
     id: "654-789",
@@ -46,6 +50,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Apr 24, 1995",
     constituency: "Manchester North Western",
     verificationStatus: "verified",
+    formsApplied: 2,
+    formsQualified: 2,
   },
   {
     id: "321-654",
@@ -53,6 +59,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Dec 2, 1975",
     constituency: "Manchester North Eastern",
     verificationStatus: "verified",
+    formsApplied: 5,
+    formsQualified: 4,
   },
   {
     id: "789-456",
@@ -60,6 +68,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Jul 17, 1988",
     constituency: "Central Manchester",
     verificationStatus: "verified",
+    formsApplied: 1,
+    formsQualified: 1,
   },
   {
     id: "412-885",
@@ -67,6 +77,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Mar 11, 1990",
     constituency: "Manchester Southern",
     verificationStatus: "verified",
+    formsApplied: 4,
+    formsQualified: 3,
   },
   {
     id: "523-147",
@@ -74,6 +86,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Sep 5, 1992",
     constituency: "Manchester North Western",
     verificationStatus: "verified",
+    formsApplied: 2,
+    formsQualified: 1,
   },
   {
     id: "689-321",
@@ -81,6 +95,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Jan 22, 1985",
     constituency: "Central Manchester",
     verificationStatus: "verified",
+    formsApplied: 3,
+    formsQualified: 3,
   },
   {
     id: "852-963",
@@ -88,6 +104,8 @@ const mockPeople: Person[] = [
     dateOfBirth: "Jun 8, 1989",
     constituency: "Manchester North Eastern",
     verificationStatus: "verified",
+    formsApplied: 1,
+    formsQualified: 0,
   },
 ];
 
@@ -187,8 +205,9 @@ export function PeopleView() {
             <TableRow>
               <TableHead>FULL NAME</TableHead>
               <TableHead>DATE OF BIRTH</TableHead>
-              <TableHead>CONSTITUENCY</TableHead>
-              <TableHead>VERIFICATION STATUS</TableHead>
+              <TableHead>DIVISION</TableHead>
+              <TableHead>FORMS APPLIED</TableHead>
+              <TableHead>FORMS QUALIFIED</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -207,21 +226,13 @@ export function PeopleView() {
                   </TableCell>
                   <TableCell>{person.dateOfBirth}</TableCell>
                   <TableCell>{person.constituency}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {person.verificationStatus === "verified" && (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          <span className="text-sm">Verified</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
+                  <TableCell>{person.formsApplied}</TableCell>
+                  <TableCell>{person.formsQualified}</TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No people found
                 </TableCell>
               </TableRow>
