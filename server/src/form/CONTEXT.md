@@ -47,24 +47,25 @@ Example Response:
 
 ### GET /form/requirements
 
-Return the `field_registry` rows for required fields that have not yet been captured for the applicant.
+Return the `field_registry` rows for required fields that have not yet been captured for the applicant. If `form_name` is omitted, the endpoint uses all fields in `field_registry`.
 
 Query Parameters:
 | Parameter | Type   | Required | Description                  |
 | --------- | ------ | -------- | ---------------------------- |
-| form_name   | string | Yes      | Form name used to load policy |
+| form_name    | string | No       | Form name used to load policy |
 | phone_number | string | No       | Phone number used to resolve applicant |
 
 Response:
 
 - `200 OK` - Returns an array of missing `field_registry` rows
-- `400 Bad Request` - Missing `form_name`
+- `400 Bad Request` - Missing `form_name` and `phone_number`
 - `404 Not Found` - No policy found matching the criteria
 
 Example Request:
 
 ```
 GET /form/requirements?form_name=employment_application&phone_number=15551234567
+GET /form/requirements?phone_number=15551234567
 ```
 
 Example Response:

@@ -17,6 +17,7 @@ describe('FormService', () => {
             findUserIdByPhoneNumber: jest.fn(),
             findApplicantFieldIdsByUserId: jest.fn(),
             findFieldRegistryRowsByIds: jest.fn(),
+            findAllFieldRegistryFieldIds: jest.fn(),
           },
         },
       ],
