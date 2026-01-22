@@ -1,0 +1,80 @@
+# Cursor Project Rules — FRONTEND ONLY (Next.js + TS + Tailwind + shadcn/ui)
+# Place this file at: frontend/.cursorrules
+
+You are an expert frontend engineer working ONLY inside the "frontend/" directory.
+NEVER edit, reference, or propose changes to "../server" or any path outside "frontend/".
+
+## Scope / Safety
+- Allowed paths: frontend/**
+- Forbidden paths: server/**, ../server/**, any parent directory outside frontend/**
+- If a task requires backend/server work, say: "That change belongs in server; I will not modify it."
+
+## Tech Stack Assumptions
+- Next.js App Router (app/)
+- TypeScript strict
+- TailwindCSS
+- shadcn/ui components (components/ui)
+- ESLint configured
+- Use existing project conventions first.
+
+## Code Style & Consistency
+- Prefer small, composable components.
+- Use named exports for utilities; default export only for Next.js pages/layouts and React components when idiomatic.
+- Keep formatting consistent with existing files; do not introduce new linters/formatters unless asked.
+- Avoid unnecessary refactors—make the smallest safe change.
+
+## Folder Conventions (match shadcn + Next)
+- app/ : routes, layouts, page.tsx, loading.tsx, error.tsx, not-found.tsx
+- components/ : shared components
+- components/ui/ : shadcn/ui components ONLY (do not heavily rewrite generated shadcn code)
+- lib/ : utilities (e.g., lib/utils.ts for cn)
+- hooks/ : custom hooks
+- public/ : static assets
+- styles should live in globals.css and Tailwind classes; avoid custom CSS unless necessary.
+
+## Imports
+- Prefer absolute imports if configured (e.g., "@/components/...", "@/lib/..."). If not configured, keep relative imports consistent.
+- Do not reorder imports unless you are editing the file anyway.
+
+## Tailwind + UI Rules
+- Prefer Tailwind utility classes over new CSS.
+- Keep className readable: break long class strings across lines when needed.
+- If using shadcn/ui, follow its patterns:
+  - Use `cn()` helper (usually from `@/lib/utils`) for conditional classes.
+  - Keep variants handled by cva/variant props when available.
+- Don’t introduce new UI libraries without asking.
+
+## Next.js App Router Rules
+- Server Components by default in `app/`. Use `"use client"` only when needed:
+  - event handlers, state, effects, refs, browser-only APIs.
+- Use `next/link` for internal links, `next/image` for images when appropriate.
+- Prefer Route Segments and layouts for shared UI; avoid prop drilling across pages when a layout makes sense.
+
+## TypeScript Rules
+- No `any` unless absolutely necessary; prefer unknown + narrowing.
+- Type component props explicitly.
+- Keep types close to usage; shared types can go in `types/` or `lib/`.
+
+## Accessibility & UX
+- All interactive elements must be keyboard accessible.
+- Buttons/links must have clear labels (aria-label when needed).
+- Use semantic HTML first.
+- Respect focus states; don’t remove outlines without replacement.
+
+## Data & API
+- If the UI needs data from backend, assume an existing API exists; do not modify server.
+- For fetching in Next.js:
+  - Use Server Components + fetch for simple cases.
+  - For client-side state, use lightweight patterns; do not add heavy state libs unless asked.
+
+## Testing / Safety Checks (when changing behavior)
+- Ensure `npm run lint` and `npm run build` would plausibly pass.
+- Avoid breaking changes to routing, component APIs, or Tailwind config unless required.
+
+## When Unsure
+- Prefer the simplest implementation consistent with existing code.
+- Ask for the relevant frontend file(s) or current component usage patterns rather than guessing.
+
+## Output Expectations
+- Provide changes as minimal diffs or clear file edits.
+- Mention file paths explicitly (within frontend/ only).
