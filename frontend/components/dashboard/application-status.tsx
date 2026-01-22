@@ -44,9 +44,9 @@ export function ApplicationStatus() {
             Loading...
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="relative w-48 h-48">
-              <svg className="transform -rotate-90 w-48 h-48">
+          <div className="flex flex-col items-center justify-center space-y-4 sm:space-y-6">
+            <div className="relative w-40 h-40 sm:w-48 sm:h-48">
+              <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 192 192">
                 <circle
                   cx="96"
                   cy="96"
@@ -71,7 +71,7 @@ export function ApplicationStatus() {
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-4xl font-bold">{completedPercent}%</p>
+                  <p className="text-3xl sm:text-4xl font-bold">{completedPercent}%</p>
                   <p className="text-xs text-muted-foreground">Approved</p>
                 </div>
               </div>

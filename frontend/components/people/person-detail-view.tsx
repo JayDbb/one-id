@@ -115,7 +115,7 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/people" className="hover:text-foreground">
@@ -130,24 +130,24 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
       </nav>
 
       {/* Profile Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted border-2 border-border">
-            <User className="h-10 w-10 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+        <div className="flex items-start gap-4 sm:gap-6">
+          <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-muted border-2 border-border shrink-0">
+            <User className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">{person.fullName}</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">{person.fullName}</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-base break-words">
               TRN: {formatTRN(person.trn || person.id)} • {person.location || person.division} • {person.division}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Pencil className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base">
+            <Pencil className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
             Edit
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="shrink-0">
             <MoreVertical className="h-5 w-5" />
           </Button>
         </div>
@@ -221,15 +221,15 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
 
         {/* Applications - Full width */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-sm font-semibold">APPLICATIONS SUBMITTED</h2>
             {person.applications.length > 0 && (
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search applications..."
-                  className="pl-9 h-9"
+                  className="pl-9 h-9 w-full"
                   value={applicationsSearch}
                   onChange={(e) => setApplicationsSearch(e.target.value)}
                 />
@@ -290,15 +290,15 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
 
         {/* Qualified Applications - Full width */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-sm font-semibold">QUALIFIED FOR</h2>
             {person.qualifications.length > 0 && (
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search programs..."
-                  className="pl-9 h-9"
+                  className="pl-9 h-9 w-full"
                   value={qualificationsSearch}
                   onChange={(e) => setQualificationsSearch(e.target.value)}
                 />
