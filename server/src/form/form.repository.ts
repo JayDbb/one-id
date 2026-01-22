@@ -126,4 +126,24 @@ export class FormRepository {
 
     return (data ?? []) as FieldRegistryRow[];
   }
+
+  async findAllFieldRegistryFieldIds(): Promise<string[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('field_registry')
+      .select('field_id');
+
+    if (error) {
+      throw new Error(`Failed to fetch field registry ids: ${error.message}`);
+    }
+
+    const fieldIds = (data ?? [])
+      .map((row) => (row as { field_id?: unknown }).field_id)
+      .filter(
+        (fieldId): fieldId is string =>
+          typeof fieldId === 'string' && fieldId.length > 0,
+      );
+
+    return Array.from(new Set(fieldIds));
+  }
 }
