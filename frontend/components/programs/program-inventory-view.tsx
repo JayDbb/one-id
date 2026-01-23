@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiClient, Program } from "@/lib/api";
 
@@ -81,24 +82,24 @@ export function ProgramInventoryView() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">Program Inventory</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">Program Inventory</h1>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-base">
           Comprehensive management of government programs, CDF forms (e.g. Needs Assessment), and application lifecycles.
         </p>
       </div>
 
       {/* Filter Tabs and Advanced Filters */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 w-full">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
           {tabs.map((tab) => (
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? "default" : "ghost"}
               className={cn(
-                "h-9 px-4",
+                "h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm",
                 activeTab === tab.id && "bg-blue-600 hover:bg-blue-700 text-white"
               )}
               onClick={() => {
@@ -110,8 +111,8 @@ export function ProgramInventoryView() {
             </Button>
           ))}
         </div>
-        <Button variant="outline" className="h-9">
-          <Filter className="h-4 w-4 mr-2" />
+        <Button variant="outline" className="h-8 sm:h-9 w-full sm:w-auto text-xs sm:text-sm">
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
           Advanced Filters
         </Button>
       </div>
@@ -124,23 +125,38 @@ export function ProgramInventoryView() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>PROGRAM / FORM NAME</TableHead>
-              <TableHead>STATUS</TableHead>
-              <TableHead>FIELD REQUIREMENTS</TableHead>
-              <TableHead>CURRENT APPLICATIONS</TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10 w-full overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[600px] sm:min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">PROGRAM / FORM NAME</TableHead>
+                <TableHead className="whitespace-nowrap">STATUS</TableHead>
+                <TableHead className="whitespace-nowrap">FIELD REQUIREMENTS</TableHead>
+                <TableHead className="whitespace-nowrap">CURRENT APPLICATIONS</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: rowsPerPage }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : paginatedPrograms.length > 0 ? (
               paginatedPrograms.map((program) => (
                 <TableRow key={program.id}>
@@ -177,14 +193,15 @@ export function ProgramInventoryView() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}
       {!loading && filteredPrograms.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rows per page</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
               <Select
                 value={rowsPerPage.toString()}
                 onValueChange={(value) => {
@@ -203,29 +220,29 @@ export function ProgramInventoryView() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground text-center sm:text-left">
               Showing {startIndex + 1}-{Math.min(endIndex, filteredPrograms.length)} of{" "}
               {filteredPrograms.length} results
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-9 w-9 shrink-0"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-[calc(100vw-8rem)] sm:max-w-none">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <Button
                   key={page}
                   variant={currentPage === page ? "default" : "outline"}
                   size="icon"
                   className={cn(
-                    "h-9 w-9",
+                    "h-9 w-9 shrink-0",
                     currentPage === page && "bg-blue-600 hover:bg-blue-700 text-white"
                   )}
                   onClick={() => setCurrentPage(page)}
@@ -237,7 +254,7 @@ export function ProgramInventoryView() {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-9 w-9 shrink-0"
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
@@ -248,17 +265,17 @@ export function ProgramInventoryView() {
       )}
 
       {/* Footer Status */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="h-2 w-2 rounded-full bg-blue-600" />
-          <span>SYSTEM: PROGRAM INVENTORY MASTER</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-3 sm:gap-0">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <div className="h-2 w-2 rounded-full bg-blue-600 shrink-0" />
+          <span className="break-words">SYSTEM: PROGRAM INVENTORY MASTER</span>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
           TOTAL ACTIVE: {programs.filter((p) => p.status === "active").length} PROGRAMS & FORMS
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="h-2 w-2 rounded-full bg-green-600" />
-          <span>INVENTORY SYNC: COMPLETED</span>
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <div className="h-2 w-2 rounded-full bg-green-600 shrink-0" />
+          <span className="break-words">INVENTORY SYNC: COMPLETED</span>
         </div>
       </div>
     </div>

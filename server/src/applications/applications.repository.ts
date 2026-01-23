@@ -116,4 +116,27 @@ export class ApplicationsRepository {
 
     return Array.from(new Set(formIds));
   }
+
+  async create(applicationData: {
+    applicant: string | number;
+    form_id: string;
+    status?: string;
+  }): Promise<any> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applications')
+      .insert({
+        applicant: applicationData.applicant,
+        form_id: applicationData.form_id,
+        status: applicationData.status || 'submitted',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create application: ${error.message}`);
+    }
+
+    return data;
+  }
 }

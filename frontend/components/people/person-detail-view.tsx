@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { cn, formatTRN } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient, PersonDetail } from "@/lib/api";
 
 interface PersonDetailProps {
@@ -53,8 +54,98 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="space-y-6">
+        {/* Breadcrumb Skeleton */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+
+        {/* Profile Header Skeleton */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-6">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-10" />
+          </div>
+        </div>
+
+        {/* Bento Box Grid Skeleton */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {/* Basic Info Skeleton */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <Skeleton className="h-4 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Info Skeleton */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <Skeleton className="h-4 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Applications Skeleton */}
+          <div className="lg:col-span-4 space-y-4">
+            <Skeleton className="h-4 w-32" />
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <Skeleton className="h-8 w-8 rounded-lg" />
+                      <Skeleton className="h-4 w-4 rounded-full" />
+                    </div>
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                    <Skeleton className="h-3 w-16" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -115,7 +206,7 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/people" className="hover:text-foreground">
@@ -130,24 +221,24 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
       </nav>
 
       {/* Profile Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted border-2 border-border">
-            <User className="h-10 w-10 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+        <div className="flex items-start gap-4 sm:gap-6">
+          <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-muted border-2 border-border shrink-0">
+            <User className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">{person.fullName}</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">{person.fullName}</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-base break-words">
               TRN: {formatTRN(person.trn || person.id)} • {person.location || person.division} • {person.division}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Pencil className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-9 sm:h-10 text-sm sm:text-base">
+            <Pencil className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
             Edit
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="shrink-0">
             <MoreVertical className="h-5 w-5" />
           </Button>
         </div>
@@ -221,15 +312,15 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
 
         {/* Applications - Full width */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-sm font-semibold">APPLICATIONS SUBMITTED</h2>
             {person.applications.length > 0 && (
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search applications..."
-                  className="pl-9 h-9"
+                  className="pl-9 h-9 w-full"
                   value={applicationsSearch}
                   onChange={(e) => setApplicationsSearch(e.target.value)}
                 />
@@ -290,15 +381,15 @@ export function PersonDetailView({ personId }: PersonDetailProps) {
 
         {/* Qualified Applications - Full width */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-sm font-semibold">QUALIFIED FOR</h2>
             {person.qualifications.length > 0 && (
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search programs..."
-                  className="pl-9 h-9"
+                  className="pl-9 h-9 w-full"
                   value={qualificationsSearch}
                   onChange={(e) => setQualificationsSearch(e.target.value)}
                 />

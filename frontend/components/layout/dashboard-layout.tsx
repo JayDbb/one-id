@@ -8,15 +8,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-x-hidden max-w-full">
       <Sidebar />
       <div
-        className={`flex-1 transition-all duration-300 ${
-          isCollapsed ? "pl-16" : "pl-64"
+        className={`flex-1 transition-all duration-300 w-full min-w-0 max-w-full ${
+          isCollapsed ? "md:pl-16" : "md:pl-64"
         }`}
       >
         <TopBar />
-        <main className="p-6">{children}</main>
+        <main className="p-2 sm:p-6 overflow-x-hidden max-w-full">{children}</main>
       </div>
     </div>
   );

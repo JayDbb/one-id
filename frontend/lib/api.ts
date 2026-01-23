@@ -168,6 +168,17 @@ class ApiClient {
     return this.request<Application>(`/applications/${id}`);
   }
 
+  async submitApplication(data: {
+    form_id: string;
+    applicant_id: string;
+    status?: string;
+  }): Promise<{ message: string; application: any }> {
+    return this.request<{ message: string; application: any }>('/applications', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Forms/Programs endpoints
   async getForms(): Promise<Program[]> {
     return this.request<Program[]>('/forms');

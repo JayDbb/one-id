@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn, formatTRN } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient, Person } from "@/lib/api";
 
 export function PeopleView() {
@@ -68,15 +69,15 @@ export function PeopleView() {
   const totalPages = Math.ceil(total / itemsPerPage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">People - Central Manchester</h1>
-        <p className="text-muted-foreground mt-2">Manchester • {total} People</p>
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words">People - Central Manchester</h1>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-xs sm:text-base">Manchester • {total} People</p>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
         <div className="relative flex-1 w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -91,9 +92,9 @@ export function PeopleView() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-3 flex-1 sm:flex-initial">
+        <div className="flex flex-wrap gap-2 sm:gap-3 flex-1 sm:flex-initial w-full sm:w-auto">
           <Select value={programFilter} onValueChange={setProgramFilter}>
-            <SelectTrigger className="w-full sm:w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm">
               <SelectValue placeholder="Program: All" />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +105,7 @@ export function PeopleView() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[120px]">
+            <SelectTrigger className="w-full sm:w-[120px] h-9 text-sm">
               <SelectValue placeholder="Status: All" />
             </SelectTrigger>
             <SelectContent>
@@ -115,7 +116,7 @@ export function PeopleView() {
           </Select>
 
           <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px] h-9 text-sm">
               <SelectValue placeholder="Division: All" />
             </SelectTrigger>
             <SelectContent>
@@ -127,8 +128,8 @@ export function PeopleView() {
             </SelectContent>
           </Select>
 
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap h-9 text-sm w-full sm:w-auto">
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
             Add Person
           </Button>
         </div>
@@ -142,24 +143,42 @@ export function PeopleView() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>FULL NAME</TableHead>
-              <TableHead>PHONE NUMBER</TableHead>
-              <TableHead>DIVISION</TableHead>
-              <TableHead>FORMS APPLIED</TableHead>
-              <TableHead>FORMS QUALIFIED</TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="rounded-xl bg-card shadow-sm shadow-black/3 dark:shadow-black/10 w-full overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[600px] sm:min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">FULL NAME</TableHead>
+                <TableHead className="whitespace-nowrap">PHONE NUMBER</TableHead>
+                <TableHead className="whitespace-nowrap">DIVISION</TableHead>
+                <TableHead className="whitespace-nowrap">FORMS APPLIED</TableHead>
+                <TableHead className="whitespace-nowrap">FORMS QUALIFIED</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
+              Array.from({ length: itemsPerPage }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : people.length > 0 ? (
               people.map((person, index) => (
                 <TableRow
@@ -188,33 +207,34 @@ export function PeopleView() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}
       {!loading && total > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-muted-foreground text-center sm:text-left">
             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, total)} of{" "}
             {total} results
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-9 w-9 shrink-0"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-[calc(100vw-8rem)] sm:max-w-none">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <Button
                   key={page}
                   variant={currentPage === page ? "default" : "outline"}
                   size="icon"
                   className={cn(
-                    "h-9 w-9",
+                    "h-9 w-9 shrink-0",
                     currentPage === page && "bg-blue-600 hover:bg-blue-700 text-white"
                   )}
                   onClick={() => setCurrentPage(page)}
@@ -226,7 +246,7 @@ export function PeopleView() {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9"
+              className="h-9 w-9 shrink-0"
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
