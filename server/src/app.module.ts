@@ -10,6 +10,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { FormsModule } from './forms/forms.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EligibilityModule } from './eligibility/eligibility.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EligibilityModule } from './eligibility/eligibility.module';
     DashboardModule,
     FormModule,
     EligibilityModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
