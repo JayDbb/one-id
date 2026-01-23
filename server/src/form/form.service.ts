@@ -20,6 +20,10 @@ export class FormService {
     return this.formRepository.findForms(query.formName, fields);
   }
 
+  async findUserIdByPhoneNumber(phoneNumber: string): Promise<string | null> {
+    return this.formRepository.findUserIdByPhoneNumber(phoneNumber);
+  }
+
   async findFormRequirements(
     query: GetFormRequirementsDto,
   ): Promise<FieldRegistryRow[] | null> {

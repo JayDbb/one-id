@@ -17,6 +17,10 @@ export class ApplicationsService {
     private readonly applicationsRepository: ApplicationsRepository,
   ) {}
 
+  async findFormIdsByApplicantId(applicantId: string): Promise<string[]> {
+    return this.applicationsRepository.findFormIdsByApplicantId(applicantId);
+  }
+
   async findAll(query: GetApplicationsDto): Promise<{
     data: Application[];
     total: number;
