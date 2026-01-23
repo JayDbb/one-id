@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
-  Param,
   Post,
   Put,
   Query,
@@ -28,26 +27,16 @@ export class ApplicantFactsController {
     return this.applicantFactsService.create(dto);
   }
 
-  @Put('fields/:fieldType')
+  @Put()
   @HttpCode(HttpStatus.OK)
   async updateApplicantFact(
-    @Param('fieldType') fieldType: string,
-    @Query('phoneNumber') phoneNumber: string,
     @Body() dto: UpdateApplicantFactDto,
   ): Promise<ApplicantFact> {
-    const result = await this.applicantFactsService.update(
-      fieldType,
-      phoneNumber,
+    return this.applicantFactsService.update(
+      dto.field_id,
+      dto.phone_number,
       dto.value,
     );
-
-    if (!result) {
-      throw new NotFoundException(
-        `No applicant fact found for field '${fieldType}' with the provided phone number`,
-      );
-    }
-
-    return result;
   }
 
   @Get()
