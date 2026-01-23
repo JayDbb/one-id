@@ -74,4 +74,29 @@ export class ApplicantFactsRepository {
 
     return createdData as ApplicantFact;
   }
+
+  async updateByUserIdAndFieldId(
+    userId: string,
+    fieldId: string,
+    value: string[],
+  ): Promise<ApplicantFact | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applicant_facts')
+      .update({ value, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('field_id', fieldId)
+      .select()
+      .single();
+
+    if (error) {
+      // PGRST116 means no rows found
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw new Error(`Failed to update applicant fact: ${error.message}`);
+    }
+
+    return data as ApplicantFact;
+  }
 }
