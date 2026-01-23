@@ -15,9 +15,10 @@
 4. [People](#people)
 5. [Forms](#forms)
 6. [Form Requirements](#form-requirements)
-7. [Dashboard](#dashboard)
-8. [Eligibility](#eligibility)
-9. [Document Upload](#document-upload)
+7. [Form Registry](#form-registry)
+8. [Dashboard](#dashboard)
+9. [Eligibility](#eligibility)
+10. [Document Upload](#document-upload)
 
 ---
 
@@ -153,6 +154,79 @@ curl "http://localhost:3000/applicant-facts?trn=123-456-789"
 {
   "statusCode": 404,
   "message": "No applicant facts found matching the criteria"
+}
+```
+
+---
+
+### PUT /applicant-facts
+
+Update an existing applicant fact or create a new one if it doesn't exist (upsert behavior).
+
+**Request Body:**
+```json
+{
+  "field_id": "string (required)",
+  "value": ["string"] (required, array of strings),
+  "phone_number": "string (required)"
+}
+```
+
+**Request Validation:**
+- `field_id`: Must be a non-empty string
+- `value`: Must be a non-empty array of strings
+- `phone_number`: Must be a non-empty string (will be sanitized)
+
+**Response:**
+- **Status Code**: `200 OK`
+- **Body**: Updated or created `ApplicantFact` object
+
+**Notes:**
+- Phone numbers are automatically sanitized (non-numeric characters removed)
+- The endpoint looks up the `user_id` from the phone number
+- If no `user_id` exists for the phone number, a new UUID is generated
+- If the field being updated is `applicant.phone_number`, the value array is also sanitized
+- **Upsert behavior**: If no applicant fact exists for the given `user_id` and `field_id`, a new record is created. If it exists, the `value` is updated and `updated_at` is set to the current timestamp
+- This endpoint will never return 404 - it always creates or updates
+
+**Example Request:**
+```bash
+curl -X PUT http://localhost:3000/applicant-facts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "field_id": "applicant.tax_registration_number",
+    "value": ["987-654-321"],
+    "phone_number": "+1 (876) 555-1234"
+  }'
+```
+
+**Example Response (Updated):**
+```json
+{
+  "id": 1,
+  "field_id": "applicant.tax_registration_number",
+  "status": "pending",
+  "source": "whatsapp",
+  "created_at": "2024-11-26T10:00:00.000Z",
+  "updated_at": "2024-11-26T15:30:00.000Z",
+  "is_current": true,
+  "value": ["987-654-321"],
+  "user_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Example Response (Created - if didn't exist):**
+```json
+{
+  "id": 2,
+  "field_id": "applicant.tax_registration_number",
+  "status": "pending",
+  "source": "whatsapp",
+  "created_at": "2024-11-26T15:30:00.000Z",
+  "updated_at": "2024-11-26T15:30:00.000Z",
+  "is_current": true,
+  "value": ["987-654-321"],
+  "user_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -695,6 +769,97 @@ curl http://localhost:3000/forms
     "updated_at": "2024-11-01T00:00:00.000Z"
   }
 ]
+```
+
+---
+
+## Form Registry
+
+### GET /form-registry
+
+Retrieve field registry entries. The field registry contains metadata about all available form fields.
+
+**Query Parameters:**
+- `fields` (optional, string): Comma-separated list of fields to include in response
+
+**Available Fields:**
+- `field_id` - The unique identifier for the field
+- `title` - Human-readable title
+- `prompt_template` - Template for prompting users
+- `type` - Field type (text, number, date, etc.)
+- `validation` - Validation rules (JSON)
+- `normalizers` - Data normalization rules (JSON)
+- `aliases` - Alternative field names (JSON)
+- `category` - Field category
+
+**Request Validation:**
+- `fields`: If provided, must only contain valid field names from the list above
+- Invalid fields will result in a 400 error
+- The `constraint` field is ignored if provided
+
+**Response:**
+- **Status Code**: `200 OK` if results found
+- **Status Code**: `400 Bad Request` if invalid fields specified
+- **Status Code**: `404 Not Found` if no results found
+- **Body**: Array of field registry objects
+
+**Example Request (all fields):**
+```bash
+curl http://localhost:3000/form-registry
+```
+
+**Example Request (specific fields):**
+```bash
+curl "http://localhost:3000/form-registry?fields=field_id,title,type,validation"
+```
+
+**Example Response:**
+```json
+[
+  {
+    "field_id": "applicant.full_name",
+    "title": "Full Name",
+    "prompt_template": "Please enter your full name",
+    "type": "text",
+    "validation": {
+      "required": true,
+      "minLength": 2,
+      "maxLength": 100
+    },
+    "normalizers": [],
+    "aliases": ["name", "fullname"],
+    "category": "personal_info"
+  },
+  {
+    "field_id": "applicant.tax_registration_number",
+    "title": "Tax Registration Number",
+    "prompt_template": "Please enter your TRN",
+    "type": "text",
+    "validation": {
+      "required": true,
+      "pattern": "^[0-9]{3}-[0-9]{3}-[0-9]{3}$"
+    },
+    "normalizers": ["trim", "uppercase"],
+    "aliases": ["trn"],
+    "category": "identification"
+  }
+]
+```
+
+**Error Response (400):**
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid fields: invalid_field_name"
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "statusCode": 404,
+  "message": "No form registry rows found"
+}
 ```
 
 ---
