@@ -62,6 +62,55 @@ export class ApplicantFactsService {
     return this.applicantFactsRepository.create(data);
   }
 
+  async update(
+    fieldId: string,
+    phoneNumber: string,
+    value: string[],
+  ): Promise<ApplicantFact> {
+    // Sanitize the phone number
+    const cleanPhoneNumber = this.sanitizePhoneNumber(phoneNumber);
+
+    // Look up user_id from the phone number
+    let userId =
+      await this.applicantFactsRepository.findUserIdByPhoneNumber(
+        cleanPhoneNumber,
+      );
+
+    // If no user_id found, generate a new one
+    if (!userId) {
+      userId = randomUUID();
+    }
+
+    // If updating phone_number field, sanitize the value
+    const cleanValue =
+      fieldId === this.FIELD_IDS.PHONE_NUMBER
+        ? value.map((v) => this.sanitizePhoneNumber(v))
+        : value;
+
+    // Try to update existing record
+    const updatedFact = await this.applicantFactsRepository.updateByUserIdAndFieldId(
+      userId,
+      fieldId,
+      cleanValue,
+    );
+
+    // If no record found, create a new one
+    if (!updatedFact) {
+      const data = {
+        field_id: fieldId,
+        value: cleanValue,
+        status: this.DEFAULT_VALUES.STATUS,
+        source: this.DEFAULT_VALUES.SOURCE,
+        is_current: this.DEFAULT_VALUES.IS_CURRENT,
+        user_id: userId,
+      };
+
+      return this.applicantFactsRepository.create(data);
+    }
+
+    return updatedFact;
+  }
+
   async findByQuery(query: GetApplicantFactDto): Promise<ApplicantFact[]> {
     const { trn, phoneNumber } = query;
 

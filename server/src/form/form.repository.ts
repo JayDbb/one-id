@@ -32,6 +32,32 @@ export class FormRepository {
       .filter((name): name is string => typeof name === 'string' && name.length > 0);
   }
 
+  async findForms(
+    formName?: string,
+    fields?: string[],
+  ): Promise<Record<string, unknown>[]> {
+    const selectFields = fields && fields.length > 0
+      ? fields.join(',')
+      : 'form_name,policy,shorten_name';
+
+    let query = this.supabaseService
+      .getClient()
+      .from('form_criteria')
+      .select(selectFields);
+
+    if (formName) {
+      query = query.eq('form_name', formName);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch forms: ${error.message}`);
+    }
+
+    return (data ?? []) as unknown as Record<string, unknown>[];
+  }
+
   async findFormPolicy(formName: string): Promise<unknown | null> {
     const { data, error } = await this.supabaseService
       .getClient()

@@ -6,11 +6,13 @@ import {
   HttpStatus,
   NotFoundException,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApplicantFactsService } from './applicant-facts.service';
 import { CreateApplicantFactDto } from './dto/create-applicant-fact.dto';
 import { GetApplicantFactDto } from './dto/get-applicant-fact.dto';
+import { UpdateApplicantFactDto } from './dto/update-applicant-fact.dto';
 import { ApplicantFact } from './entities/applicant-fact.entity';
 
 @Controller('applicant-facts')
@@ -23,6 +25,18 @@ export class ApplicantFactsController {
     @Body() dto: CreateApplicantFactDto,
   ): Promise<ApplicantFact> {
     return this.applicantFactsService.create(dto);
+  }
+
+  @Put()
+  @HttpCode(HttpStatus.OK)
+  async updateApplicantFact(
+    @Body() dto: UpdateApplicantFactDto,
+  ): Promise<ApplicantFact> {
+    return this.applicantFactsService.update(
+      dto.field_id,
+      dto.phone_number,
+      dto.value,
+    );
   }
 
   @Get()

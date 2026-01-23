@@ -20,12 +20,13 @@ This module exposes form names and form policies from the Supabase database.
 
 ### GET /form
 
-Return form names from `form_criteria`.
+Return forms from `form_criteria` with selected fields.
 
 Query Parameters:
-| Parameter | Type   | Required | Description                        |
-| --------- | ------ | -------- | ---------------------------------- |
-| formName  | string | No       | Optional exact match on form name  |
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| formName  | string | No       | Optional exact match on form name           |
+| fields    | string | No       | Comma-separated fields (form_name, policy, shorten_name) |
 
 Response:
 
@@ -37,12 +38,19 @@ Example Request:
 ```
 GET /form
 GET /form?formName=employment_application
+GET /form?fields=form_name,policy,shorten_name
 ```
 
 Example Response:
 
 ```json
-["employment_application", "visa_intake"]
+[
+  {
+    "form_name": "employment_application",
+    "policy": {},
+    "shorten_name": "employment_application"
+  }
+]
 ```
 
 ### GET /form/requirements

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { GetFormDto } from './dto/get-form.dto';
 import { GetFormRequirementsDto } from './dto/get-form-requirements.dto';
 import { FieldRegistryRow } from './entities/field-registry.entity';
@@ -13,6 +13,15 @@ export class FormService {
     const results = await this.formRepository.findFormNames(formName);
 
     return this.removeDuplicates(results);
+  }
+
+  async findForms(query: GetFormDto): Promise<Record<string, unknown>[]> {
+    const fields = this.parseFields(query.fields);
+    return this.formRepository.findForms(query.formName, fields);
+  }
+
+  async findUserIdByPhoneNumber(phoneNumber: string): Promise<string | null> {
+    return this.formRepository.findUserIdByPhoneNumber(phoneNumber);
   }
 
   async findFormRequirements(
@@ -62,6 +71,32 @@ export class FormService {
 
   private removeDuplicates(names: string[]): string[] {
     return Array.from(new Set(names));
+  }
+
+  private parseFields(fields?: string): string[] | undefined {
+    if (!fields) {
+      return undefined;
+    }
+
+    const parsedFields = fields
+      .split(',')
+      .map((field) => field.trim())
+      .filter((field) => field.length > 0);
+
+    if (parsedFields.length === 0) {
+      return undefined;
+    }
+
+    const allowed = new Set(['form_name', 'policy', 'shorten_name']);
+    const invalidFields = parsedFields.filter((field) => !allowed.has(field));
+
+    if (invalidFields.length > 0) {
+      throw new BadRequestException(
+        `Invalid fields: ${invalidFields.join(', ')}`,
+      );
+    }
+
+    return parsedFields;
   }
 
   private parsePolicy(policy: unknown | null): unknown | null {

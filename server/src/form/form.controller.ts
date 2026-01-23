@@ -17,12 +17,12 @@ export class FormController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getFormNames(@Query() query: GetFormDto): Promise<string[]> {
-    const results = await this.formService.findFormNames(query);
+  async getForms(@Query() query: GetFormDto): Promise<Record<string, unknown>[]> {
+    const results = await this.formService.findForms(query);
 
     if (results.length === 0) {
       throw new NotFoundException(
-        'No form names found matching the criteria',
+        'No forms found matching the criteria',
       );
     }
 
