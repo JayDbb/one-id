@@ -62,6 +62,37 @@ export class ApplicantFactsService {
     return this.applicantFactsRepository.create(data);
   }
 
+  async update(
+    fieldId: string,
+    phoneNumber: string,
+    value: string[],
+  ): Promise<ApplicantFact | null> {
+    // Sanitize the phone number
+    const cleanPhoneNumber = this.sanitizePhoneNumber(phoneNumber);
+
+    // Look up user_id from the phone number
+    const userId =
+      await this.applicantFactsRepository.findUserIdByPhoneNumber(
+        cleanPhoneNumber,
+      );
+
+    if (!userId) {
+      return null;
+    }
+
+    // If updating phone_number field, sanitize the value
+    const cleanValue =
+      fieldId === this.FIELD_IDS.PHONE_NUMBER
+        ? value.map((v) => this.sanitizePhoneNumber(v))
+        : value;
+
+    return this.applicantFactsRepository.updateByUserIdAndFieldId(
+      userId,
+      fieldId,
+      cleanValue,
+    );
+  }
+
   async findByQuery(query: GetApplicantFactDto): Promise<ApplicantFact[]> {
     const { trn, phoneNumber } = query;
 
