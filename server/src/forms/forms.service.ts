@@ -10,7 +10,13 @@ export class FormsService {
     const forms = await this.formsRepository.findAll();
     const formList: Form[] = [];
 
-    for (const form of forms) {
+    // Filter out forms with shorten_name of "Registration" (case-insensitive, trimmed)
+    const filteredForms = forms.filter((form) => {
+      const shortenName = form.shorten_name?.trim().toLowerCase();
+      return shortenName !== 'registration';
+    });
+
+    for (const form of filteredForms) {
       // Calculate field requirements count from policy
       const fieldRequirementsCount = form.policy?.required_fields?.length || 0;
 

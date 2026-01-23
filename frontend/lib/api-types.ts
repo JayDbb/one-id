@@ -222,6 +222,26 @@ export interface CreateApplicantFactDto {
 export interface GetApplicantFactsParams {
   trn?: string;
   phoneNumber?: string;
+  user_id?: string;
+}
+
+// ============================================================================
+// Field Registry
+// ============================================================================
+
+export interface ApiFieldRegistry {
+  field_id: string;
+  title: string;
+  prompt_template?: string;
+  type: string;
+  validation?: any;
+  normalizers?: any;
+  aliases?: any;
+  category?: string;
+}
+
+export interface GetFieldRegistryParams {
+  fields?: string; // Comma-separated list of fields to return
 }
 
 // ============================================================================

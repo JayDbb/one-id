@@ -11,6 +11,11 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Program } from "@/lib/mock-data"
 
@@ -77,16 +82,18 @@ export function ProgramsTable({ programs }: ProgramsTableProps) {
                 className="group hover:bg-secondary/50 transition-colors cursor-pointer border-b border-border/50"
               >
                 <TableCell className="py-5">
-                  <Link href={`/programs/${program.id}`} className="block">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                        {program.code}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[280px]">
-                        {program.name}
-                      </span>
-                    </div>
-                  </Link>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link href={`/programs/${program.id}`} className="block">
+                        <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate max-w-[280px] block">
+                          {program.name}
+                        </span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">{program.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
                 <TableCell className="py-5">
                   <Badge variant="secondary" className={cn("text-[10px] font-semibold uppercase", statusStyles[program.status])}>

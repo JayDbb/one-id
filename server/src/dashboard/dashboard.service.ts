@@ -53,7 +53,7 @@ export class DashboardService {
 
         return {
           formId: app.form_id,
-          formName: form?.shorten_name || form?.form_name || app.form_id,
+          formName: form?.form_name || app.form_id,
           applicants: applicantCount,
           status: this.mapStatus(app.status),
           createdAt: new Date(app.created_at).toISOString().split('T')[0],
@@ -82,14 +82,20 @@ export class DashboardService {
   async getActiveForms() {
     const forms = await this.dashboardRepository.getActiveForms();
     
+    // Filter out forms with shorten_name of "Registration" (case-insensitive, trimmed)
+    const filteredForms = forms.filter((form) => {
+      const shortenName = form.shorten_name?.trim().toLowerCase();
+      return shortenName !== 'registration';
+    });
+    
     const formsWithCounts = await Promise.all(
-      forms.map(async (form) => {
+      filteredForms.map(async (form) => {
         const applicantCount = await this.dashboardRepository.countApplicationsByFormId(
           form.form_name,
         );
 
         return {
-          formName: form.shorten_name || form.form_name,
+          formName: form.form_name,
           formId: form.form_name,
           version: 1, // Version not in schema, defaulting to 1
           isActive: form.is_active,

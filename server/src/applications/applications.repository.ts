@@ -61,12 +61,14 @@ export class ApplicationsRepository {
     return data;
   }
 
-  async findFactsByApplicantId(applicantId: number): Promise<ApplicantFact[]> {
+  async findFactsByApplicantId(applicantId: number | string): Promise<ApplicantFact[]> {
+    // Convert to string since user_id is stored as text in the database
+    const userIdString = String(applicantId);
     const { data, error } = await this.supabaseService
       .getClient()
       .from('applicant_facts')
       .select('*')
-      .eq('user_id', applicantId)
+      .eq('user_id', userIdString)
       .eq('is_current', true);
 
     if (error) {

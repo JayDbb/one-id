@@ -2,11 +2,38 @@
 
 import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
-import { use } from "react"
+import { use, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { PersonTabs } from "@/components/people/person-tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePerson } from "@/hooks/use-api"
+import type { ApiPersonApplication } from "@/lib/api-types"
+
+// Transform API application to Program format for SupportTab
+function transformApplicationToProgram(app: ApiPersonApplication) {
+  // Map database status to SupportTab status format
+  const statusMap: Record<string, string> = {
+    'submitted': 'Pending',
+    'pending': 'Pending',
+    'approved': 'Approved',
+    'rejected': 'Rejected',
+    'declined': 'Rejected',
+    'draft': 'Pending',
+  }
+  
+  const mappedStatus = statusMap[app.status.toLowerCase()] || 'Pending'
+  
+  return {
+    id: String(app.id),
+    name: app.formName,
+    status: mappedStatus,
+    deliveryStatus: mappedStatus === 'Approved' ? 'Pending' as const : 'Not Applicable' as const,
+    appliedDate: app.submittedDate,
+    approvedDate: app.decisionDate || null,
+    benefitAmount: null, // Not available in API
+    weight: 10, // Default weight
+  }
+}
 
 export default function PersonDetailPage({
   params,
@@ -14,7 +41,13 @@ export default function PersonDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
-  const { data: person, loading, error } = usePerson(id)
+  const { data: person, loading, error, rawDetail } = usePerson(id)
+  
+  // Transform applications to programs
+  const programs = useMemo(() => {
+    if (!rawDetail?.applications) return []
+    return rawDetail.applications.map(transformApplicationToProgram)
+  }, [rawDetail])
   
   // Transform API person data to match PersonTabs expected format
   const personData = person ? {
@@ -45,12 +78,21 @@ export default function PersonDetailPage({
     registrationDate: "",
     lastUpdated: "",
     status: "Active",
-    programs: [], // Not available in API
+    programs, // Now populated from API applications
     submissions: {
       total: person.submissionRatio.total,
       completed: person.submissionRatio.submitted,
     },
     approvalRate: person.approvalRate,
+    impactScore: {
+      overall: person.impactScore,
+      breakdown: {
+        economicNeed: 0,
+        socialVulnerability: 0,
+        geographicFactor: 0,
+        programParticipation: 0,
+      },
+    },
   } : null
 
   if (loading) {

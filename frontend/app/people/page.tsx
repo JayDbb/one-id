@@ -1,20 +1,28 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { ChevronDown } from "lucide-react"
+import { useState, useMemo, useCallback } from "react"
+import { Filter, UserPlus } from "lucide-react"
 import { PeopleHeader } from "@/components/people/people-header"
 import { StatsDashboard } from "@/components/people/stats-dashboard"
-import { NavigationControls } from "@/components/people/navigation-controls"
-import { PeopleFilters } from "@/components/people/people-filters"
 import { PeopleTable } from "@/components/people/people-table"
 import { PeopleFooter } from "@/components/people/people-footer"
+import { FilterGallery } from "@/components/people/filter-gallery"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePeople } from "@/hooks/use-api"
 import type { Person } from "@/lib/mock-data"
-import { type AdvancedFiltersState, DEFAULT_FILTERS } from "@/components/people/advanced-filters-modal"
-import { cn } from "@/lib/utils"
+import { 
+  AdvancedFiltersModal,
+  type AdvancedFiltersState, 
+  DEFAULT_FILTERS,
+  countActiveFilters 
+} from "@/components/people/advanced-filters-modal"
 
-function filterPeople(people: Person[], filters: AdvancedFiltersState, quickFilters: string[]): Person[] {
+function filterPeople(
+  people: Person[], 
+  filters: AdvancedFiltersState,
+  galleryFilters: string[]
+): Person[] {
   return people.filter((person) => {
     // Division filter
     if (filters.division !== "all" && person.division !== filters.division) {
@@ -46,30 +54,41 @@ function filterPeople(people: Person[], filters: AdvancedFiltersState, quickFilt
       return false
     }
 
-    // Quick filters
-    if (quickFilters.length > 0) {
-      // Demographics - Age groups (only apply if person has valid age)
-      const ageFilters = quickFilters.filter(f => ["children", "youth", "adults", "seniors"].includes(f))
-      if (ageFilters.length > 0 && person.age > 0) {
-        const matchesAge = ageFilters.some(f => {
-          if (f === "children") return person.age <= 12
-          if (f === "youth") return person.age >= 13 && person.age <= 24
-          if (f === "adults") return person.age >= 25 && person.age <= 59
-          if (f === "seniors") return person.age >= 60
-          return true
-        })
+    // Gallery demographic filters
+    if (galleryFilters.length > 0) {
+      const hasAgeFilter = galleryFilters.some(f => 
+        ["children", "youth", "adults", "seniors"].includes(f)
+      )
+      
+      if (hasAgeFilter && person.age > 0) {
+        let matchesAge = false
+        if (galleryFilters.includes("children") && person.age <= 17) matchesAge = true
+        if (galleryFilters.includes("youth") && person.age >= 18 && person.age <= 35) matchesAge = true
+        if (galleryFilters.includes("adults") && person.age >= 36 && person.age <= 64) matchesAge = true
+        if (galleryFilters.includes("seniors") && person.age >= 65) matchesAge = true
         if (!matchesAge) return false
       }
 
-      // Special focus filters
-      const specialFilters = quickFilters.filter(f => ["single-parents", "at-risk", "community"].includes(f))
-      if (specialFilters.length > 0) {
-        const matchesSpecial = specialFilters.some(f => {
+      // Demographic filters
+      const demographicFilters = galleryFilters.filter(f => ["single-parents", "dependents", "disabled"].includes(f))
+      if (demographicFilters.length > 0) {
+        const matchesDemographic = demographicFilters.some(f => {
           if (f === "single-parents") return person.maritalStatus === "single"
-          // For demo purposes, at-risk and community would need additional data fields
+          // For demo purposes, dependents and disabled would need additional data fields
           return true
         })
-        if (!matchesSpecial) return false
+        if (!matchesDemographic) return false
+      }
+
+      // Program filters - check if person has programs matching the filter
+      const programFilters = galleryFilters.filter(f => 
+        ["path", "housing", "employment", "food-support", "healthcare", "education", "pension", "nht", "social-pension"].includes(f)
+      )
+      if (programFilters.length > 0) {
+        // For demo purposes, check if person has any programs
+        // In a real implementation, this would check specific program types
+        const hasPrograms = person.programs && person.programs.length > 0
+        if (!hasPrograms) return false
       }
     }
     
@@ -78,16 +97,11 @@ function filterPeople(people: Person[], filters: AdvancedFiltersState, quickFilt
 }
 
 export default function PeoplePage() {
-  const [geographic, setGeographic] = useState({
-    county: "Middlesex",
-    parish: "Manchester",
-    constituency: "NE Manchester",
-  })
-  const [timePeriod, setTimePeriod] = useState("all")
   const [appliedFilters, setAppliedFilters] = useState<AdvancedFiltersState>(DEFAULT_FILTERS)
-  const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([])
-  const [summaryExpanded, setSummaryExpanded] = useState(true)
-  const [peopleListExpanded, setPeopleListExpanded] = useState(true)
+  const [modalFilters, setModalFilters] = useState<AdvancedFiltersState>(DEFAULT_FILTERS)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedGalleryFilters, setSelectedGalleryFilters] = useState<string[]>([])
+  const [recentFilters, setRecentFilters] = useState<string[]>([])
   
   // Map frontend filters to API query params
   const apiFilters = useMemo(() => {
@@ -103,19 +117,38 @@ export default function PeoplePage() {
   }, [appliedFilters])
   
   const { data: people, loading, error } = usePeople(apiFilters)
-  
-  const handleQuickFilterToggle = (filterId: string) => {
-    setActiveQuickFilters(prev => 
-      prev.includes(filterId) 
-        ? prev.filter(id => id !== filterId)
-        : [...prev, filterId]
-    )
-  }
 
   const filteredPeople = useMemo(() => {
     if (!people) return []
-    return filterPeople(people, appliedFilters, activeQuickFilters)
-  }, [people, appliedFilters, activeQuickFilters])
+    return filterPeople(people, appliedFilters, selectedGalleryFilters)
+  }, [people, appliedFilters, selectedGalleryFilters])
+
+  const handleFilterToggle = useCallback((filterId: string) => {
+    setSelectedGalleryFilters(prev => {
+      if (prev.includes(filterId)) {
+        return prev.filter(id => id !== filterId)
+      } else {
+        setRecentFilters(recent => {
+          const newRecent = [filterId, ...recent.filter(id => id !== filterId)].slice(0, 8)
+          return newRecent
+        })
+        return [...prev, filterId]
+      }
+    })
+  }, [])
+
+  const handleOpenModal = () => {
+    setModalFilters(appliedFilters)
+    setIsModalOpen(true)
+  }
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(modalFilters)
+    setIsModalOpen(false)
+  }
+
+  const activeFilterCount = countActiveFilters(appliedFilters)
+  const totalQuickFilters = selectedGalleryFilters.length
 
   // Calculate statistics based on filtered data
   const stats = useMemo(() => {
@@ -154,83 +187,80 @@ export default function PeoplePage() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <>
       <PeopleHeader totalPeople={filteredPeople.length} />
+      <div className="px-4 md:px-8 py-4 bg-secondary/10">
+        {loading ? (
+          <Skeleton className="h-48" />
+        ) : (
+          <StatsDashboard stats={stats} />
+        )}
+      </div>
       
-      {/* Summary Section - Collapsible */}
-      <div className="border-b border-border flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => setSummaryExpanded(!summaryExpanded)}
-          className="w-full px-4 md:px-8 py-3 flex items-center justify-between bg-secondary/20 hover:bg-secondary/30 transition-colors"
-        >
-          <span className="text-sm font-medium text-muted-foreground">Summary Overview</span>
-          <ChevronDown 
-            className={cn(
-              "size-4 text-muted-foreground transition-transform duration-200",
-              !summaryExpanded && "-rotate-90"
-            )} 
+      {/* Combined compact filter bar */}
+      <div className="px-4 md:px-8 py-2 bg-card border-b border-border flex items-center gap-2">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider shrink-0">Filters</span>
+        <div className="w-px h-4 bg-border shrink-0" />
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <FilterGallery 
+            selectedFilters={selectedGalleryFilters}
+            onFilterToggle={handleFilterToggle}
+            recentFilters={recentFilters}
           />
-        </button>
-        <div className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          summaryExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-        )}>
-          <div className="px-4 md:px-8 py-4 bg-secondary/10">
-            {loading ? (
-              <Skeleton className="h-48" />
-            ) : (
-              <StatsDashboard stats={stats} />
-            )}
-          </div>
         </div>
+        
+        {totalQuickFilters > 0 && (
+          <button 
+            onClick={() => setSelectedGalleryFilters([])}
+            className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap px-1.5 shrink-0"
+          >
+            Clear
+          </button>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleOpenModal}
+          className="flex items-center gap-1 h-7 text-[11px] text-muted-foreground hover:text-foreground px-2 bg-transparent shrink-0"
+        >
+          <Filter className="size-3" />
+          <span className="hidden sm:inline">More</span>
+          {activeFilterCount > 0 && (
+            <span className="px-1 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-bold leading-none">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
       </div>
 
-      {/* People Directory Section - Collapsible */}
-      <div className="flex flex-col flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => setPeopleListExpanded(!peopleListExpanded)}
-          className="w-full px-4 md:px-8 py-3 flex items-center justify-between bg-card border-b border-border hover:bg-secondary/30 transition-colors"
-        >
-          <span className="text-sm font-medium text-muted-foreground">
-            People Directory ({loading ? '...' : filteredPeople.length} results)
-          </span>
-          <ChevronDown 
-            className={cn(
-              "size-4 text-muted-foreground transition-transform duration-200",
-              !peopleListExpanded && "-rotate-90"
-            )} 
-          />
-        </button>
-        <div className={cn(
-          "flex flex-col transition-all duration-300 ease-in-out",
-          peopleListExpanded ? "opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-        )}>
-          <NavigationControls
-            geographic={geographic}
-            onGeographicChange={setGeographic}
-            timePeriod={timePeriod}
-            onTimePeriodChange={setTimePeriod}
-          />
-          <PeopleFilters 
-            appliedFilters={appliedFilters}
-            onFiltersApplied={setAppliedFilters}
-            activeQuickFilters={activeQuickFilters}
-            onQuickFilterToggle={handleQuickFilterToggle}
-          />
-          {loading ? (
-            <div className="p-4">
-              <Skeleton className="h-64" />
-            </div>
-          ) : (
-            <>
-              <PeopleTable people={filteredPeople} />
-              <PeopleFooter total={people?.length || 0} showing={filteredPeople.length} />
-            </>
-          )}
+      {loading ? (
+        <div className="p-4">
+          <Skeleton className="h-64" />
         </div>
-      </div>
-    </div>
+      ) : (
+        <>
+          <PeopleTable people={filteredPeople} />
+          <PeopleFooter total={people?.length || 0} showing={filteredPeople.length} />
+        </>
+      )}
+
+      {/* Floating Add Person Button */}
+      <Button 
+        className="fixed bottom-20 right-6 h-12 px-5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 rounded-full flex items-center gap-2 font-semibold z-50"
+      >
+        <UserPlus className="size-5" />
+        Add Person
+      </Button>
+
+      <AdvancedFiltersModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        filters={modalFilters}
+        onFiltersChange={setModalFilters}
+        onApply={handleApplyFilters}
+        onClearAll={() => setModalFilters(DEFAULT_FILTERS)}
+      />
+    </>
   )
 }

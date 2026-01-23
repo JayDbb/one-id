@@ -148,7 +148,7 @@ export class PeopleService {
 
         return {
           id: app.id,
-          formName: form?.shorten_name || form?.form_name || app.form_id,
+          formName: form?.form_name || app.form_id,
           status: app.status,
           submittedDate: new Date(app.created_at).toLocaleDateString('en-US', {
             month: 'short',
