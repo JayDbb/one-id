@@ -24,6 +24,12 @@ export class FormService {
     return this.formRepository.findUserIdByPhoneNumber(phoneNumber);
   }
 
+  async findApplicantFactsByUserId(
+    userId: string,
+  ): Promise<{ field_id: string; value: string[] | null }[]> {
+    return this.formRepository.findApplicantFactsByUserId(userId);
+  }
+
   async findFormRequirements(
     query: GetFormRequirementsDto,
   ): Promise<FieldRegistryRow[] | null> {

@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Query,
 } from '@nestjs/common';
 import { GetEligibilityDto } from './dto/get-eligibility.dto';
@@ -23,5 +24,25 @@ export class EligibilityController {
     }
 
     return this.eligibilityService.findCompletedForms(query.phone_number);
+  }
+
+  @Get('check-eligibility/info')
+  @HttpCode(HttpStatus.OK)
+  async getEligibilityInfo(
+    @Query() query: GetEligibilityDto,
+  ): Promise<Record<string, unknown>[]> {
+    if (!query.phone_number) {
+      throw new BadRequestException('phone_number is required');
+    }
+
+    const results = await this.eligibilityService.findEligibilityInfo(
+      query.phone_number,
+    );
+
+    if (results.length === 0) {
+      throw new NotFoundException('No eligibility criteria found');
+    }
+
+    return results;
   }
 }

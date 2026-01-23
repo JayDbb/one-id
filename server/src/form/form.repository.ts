@@ -133,6 +133,34 @@ export class FormRepository {
     return Array.from(new Set(fieldIds));
   }
 
+  async findApplicantFactsByUserId(
+    userId: string,
+  ): Promise<{ field_id: string; value: string[] | null }[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applicant_facts')
+      .select('field_id,value')
+      .eq('user_id', userId)
+      .eq('is_current', true);
+
+    if (error) {
+      throw new Error(`Failed to fetch applicant facts: ${error.message}`);
+    }
+
+    return (data ?? [])
+      .map((row) => {
+        const fieldId = (row as { field_id?: unknown }).field_id;
+        const value = (row as { value?: unknown }).value;
+        return {
+          field_id: typeof fieldId === 'string' ? fieldId : '',
+          value: Array.isArray(value)
+            ? value.map((item) => String(item))
+            : null,
+        };
+      })
+      .filter((row) => row.field_id.length > 0);
+  }
+
   async findFieldRegistryRowsByIds(
     fieldIds: string[],
   ): Promise<FieldRegistryRow[]> {
