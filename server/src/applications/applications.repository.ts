@@ -96,6 +96,27 @@ export class ApplicationsRepository {
     return data;
   }
 
+  async findFormIdsByApplicantId(applicantId: string): Promise<string[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applications')
+      .select('form_id')
+      .eq('applicant', applicantId);
+
+    if (error) {
+      throw new Error(`Failed to fetch applicant form ids: ${error.message}`);
+    }
+
+    const formIds = (data ?? [])
+      .map((row) => (row as { form_id?: unknown }).form_id)
+      .filter(
+        (formId): formId is string =>
+          typeof formId === 'string' && formId.length > 0,
+      );
+
+    return Array.from(new Set(formIds));
+  }
+
   async create(applicationData: {
     applicant: string | number;
     form_id: string;

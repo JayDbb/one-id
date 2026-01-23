@@ -11,7 +11,11 @@ describe('FormController', () => {
       providers: [
         {
           provide: FormService,
-          useValue: { findFormNames: jest.fn(), findFormRequirements: jest.fn() },
+          useValue: {
+            findForms: jest.fn(),
+            findFormNames: jest.fn(),
+            findFormRequirements: jest.fn(),
+          },
         },
       ],
     }).compile();
