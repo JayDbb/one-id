@@ -4,4 +4,8 @@ export class GetEligibilityDto {
   @IsOptional()
   @IsString()
   phone_number?: string;
+
+  @IsOptional()
+  @IsString()
+  form_name?: string;
 }

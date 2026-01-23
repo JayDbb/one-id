@@ -38,9 +38,11 @@ export class EligibilityService {
 
   async findEligibilityInfo(
     phoneNumber: string,
+    formName?: string,
   ): Promise<Record<string, unknown>[]> {
     const forms = await this.formService.findForms({
       fields: 'form_name,policy',
+      formName,
     });
     const criteria: { field_id: string; op: string; values?: string[] }[] = [];
 

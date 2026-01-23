@@ -37,6 +37,7 @@ export class EligibilityController {
 
     const results = await this.eligibilityService.findEligibilityInfo(
       query.phone_number,
+      query.form_name,
     );
 
     if (results.length === 0) {
