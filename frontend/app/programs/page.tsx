@@ -7,7 +7,9 @@ import { ProgramsStats } from "@/components/programs/programs-stats"
 import { ProgramFilters } from "@/components/programs/program-filters"
 import { ProgramsTable } from "@/components/programs/programs-table"
 import { ProgramsFooter } from "@/components/programs/programs-footer"
-import { mockPrograms, type Program } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useForms } from "@/hooks/use-api"
+import type { Program } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
 function filterPrograms(programs: Program[], filters: string[]): Program[] {
@@ -36,6 +38,9 @@ export default function ProgramsPage() {
   const [summaryExpanded, setSummaryExpanded] = useState(true)
   const [programsListExpanded, setProgramsListExpanded] = useState(true)
   
+  // Fetch programs from API
+  const { data: programs, loading, error } = useForms()
+  
   const handleFilterToggle = (filterId: string) => {
     setActiveFilters(prev => 
       prev.includes(filterId) 
@@ -45,8 +50,9 @@ export default function ProgramsPage() {
   }
 
   const filteredPrograms = useMemo(() => {
-    return filterPrograms(mockPrograms, activeFilters)
-  }, [activeFilters])
+    if (!programs) return []
+    return filterPrograms(programs, activeFilters)
+  }, [programs, activeFilters])
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -76,10 +82,24 @@ export default function ProgramsPage() {
     }
   }, [filteredPrograms])
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <p className="text-red-500 mb-4">Error loading programs: {error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <ProgramsHeader 
-        totalPrograms={mockPrograms.length} 
+        totalPrograms={programs?.length || 0} 
         activePrograms={stats.activePrograms} 
       />
       
@@ -103,7 +123,11 @@ export default function ProgramsPage() {
           summaryExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
           <div className="px-4 md:px-8 py-4 bg-secondary/10">
-            <ProgramsStats stats={stats} />
+            {loading ? (
+              <Skeleton className="h-48" />
+            ) : (
+              <ProgramsStats stats={stats} />
+            )}
           </div>
         </div>
       </div>
@@ -116,7 +140,7 @@ export default function ProgramsPage() {
           className="w-full px-4 md:px-8 py-3 flex items-center justify-between bg-card border-b border-border hover:bg-secondary/30 transition-colors"
         >
           <span className="text-sm font-medium text-muted-foreground">
-            Programs Directory ({filteredPrograms.length} results)
+            Programs Directory ({loading ? '...' : filteredPrograms.length} results)
           </span>
           <ChevronDown 
             className={cn(
@@ -133,8 +157,16 @@ export default function ProgramsPage() {
             activeFilters={activeFilters}
             onFilterToggle={handleFilterToggle}
           />
-          <ProgramsTable programs={filteredPrograms} />
-          <ProgramsFooter total={mockPrograms.length} showing={filteredPrograms.length} />
+          {loading ? (
+            <div className="p-4">
+              <Skeleton className="h-64" />
+            </div>
+          ) : (
+            <>
+              <ProgramsTable programs={filteredPrograms} />
+              <ProgramsFooter total={programs?.length || 0} showing={filteredPrograms.length} />
+            </>
+          )}
         </div>
       </div>
     </div>

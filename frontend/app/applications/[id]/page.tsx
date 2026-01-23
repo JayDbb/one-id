@@ -1,9 +1,13 @@
+"use client"
+
 import { ArrowLeft, UserCheck, XCircle, Clock } from "lucide-react"
 import Link from "next/link"
+import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { ApplicationTabs } from "@/components/applications/application-tabs"
-import { mockApplications } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { useApplication } from "@/hooks/use-api"
 import { cn } from "@/lib/utils"
 
 const statusStyles: Record<string, string> = {
@@ -21,24 +25,37 @@ const priorityStyles: Record<string, string> = {
   urgent: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
 }
 
-function getApplicationData(id: string) {
-  const application = mockApplications.find(a => a.id === id)
-  if (!application) {
-    return {
-      ...mockApplications[0],
-      id,
-    }
-  }
-  return application
-}
-
-export default async function ApplicationDetailPage({
+export default function ApplicationDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
-  const application = getApplicationData(id)
+  const { id } = use(params)
+  const { data: application, loading, error } = useApplication(id)
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 md:px-8 py-4 md:py-6">
+          <Skeleton className="h-24 mb-4" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !application) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <p className="text-red-500 mb-4">
+          {error ? `Error loading application: ${error.message}` : 'Application not found'}
+        </p>
+        <Link href="/applications">
+          <Button variant="outline">Back to Applications</Button>
+        </Link>
+      </div>
+    )
+  }
 
   const canApprove = application.status === "pending" || application.status === "under-review"
   const canReject = application.status === "pending" || application.status === "under-review"

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { AlertTriangle, Clock, UserX, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { mockApplications } from "@/lib/mock-data"
+import type { Application } from "@/lib/mock-data"
 
 interface Alert {
   id: string
@@ -14,10 +14,14 @@ interface Alert {
   href: string
 }
 
-export function AlertsPanel() {
-  const urgentApplications = mockApplications.filter(a => a.priority === "urgent" && a.status === "pending")
-  const unassignedApplications = mockApplications.filter(a => !a.assignedOfficer && a.status === "pending")
-  const overdueApplications = mockApplications.filter(a => {
+interface AlertsPanelProps {
+  applications?: Application[]
+}
+
+export function AlertsPanel({ applications = [] }: AlertsPanelProps) {
+  const urgentApplications = applications.filter(a => a.priority === "urgent" && a.status === "pending")
+  const unassignedApplications = applications.filter(a => !a.assignedOfficer && a.status === "pending")
+  const overdueApplications = applications.filter(a => {
     const days = Math.ceil((new Date().getTime() - new Date(a.submittedDate).getTime()) / (1000 * 60 * 60 * 24))
     return days > 14 && a.status === "pending"
   })

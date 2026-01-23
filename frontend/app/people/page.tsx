@@ -8,7 +8,9 @@ import { NavigationControls } from "@/components/people/navigation-controls"
 import { PeopleFilters } from "@/components/people/people-filters"
 import { PeopleTable } from "@/components/people/people-table"
 import { PeopleFooter } from "@/components/people/people-footer"
-import { mockPeople, type Person } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { usePeople } from "@/hooks/use-api"
+import type { Person } from "@/lib/mock-data"
 import { type AdvancedFiltersState, DEFAULT_FILTERS } from "@/components/people/advanced-filters-modal"
 import { cn } from "@/lib/utils"
 
@@ -24,8 +26,8 @@ function filterPeople(people: Person[], filters: AdvancedFiltersState, quickFilt
       return false
     }
     
-    // Age range filter
-    if (person.age < filters.ageRange[0] || person.age > filters.ageRange[1]) {
+    // Age range filter - only apply if person has a valid age (> 0)
+    if (person.age > 0 && (person.age < filters.ageRange[0] || person.age > filters.ageRange[1])) {
       return false
     }
     
@@ -46,9 +48,9 @@ function filterPeople(people: Person[], filters: AdvancedFiltersState, quickFilt
 
     // Quick filters
     if (quickFilters.length > 0) {
-      // Demographics - Age groups
+      // Demographics - Age groups (only apply if person has valid age)
       const ageFilters = quickFilters.filter(f => ["children", "youth", "adults", "seniors"].includes(f))
-      if (ageFilters.length > 0) {
+      if (ageFilters.length > 0 && person.age > 0) {
         const matchesAge = ageFilters.some(f => {
           if (f === "children") return person.age <= 12
           if (f === "youth") return person.age >= 13 && person.age <= 24
@@ -87,6 +89,21 @@ export default function PeoplePage() {
   const [summaryExpanded, setSummaryExpanded] = useState(true)
   const [peopleListExpanded, setPeopleListExpanded] = useState(true)
   
+  // Map frontend filters to API query params
+  const apiFilters = useMemo(() => {
+    const filters: { division?: string; search?: string; limit?: number } = {
+      limit: 100, // Get more for client-side filtering
+    }
+    
+    if (appliedFilters.division !== "all") {
+      filters.division = appliedFilters.division
+    }
+    
+    return filters
+  }, [appliedFilters])
+  
+  const { data: people, loading, error } = usePeople(apiFilters)
+  
   const handleQuickFilterToggle = (filterId: string) => {
     setActiveQuickFilters(prev => 
       prev.includes(filterId) 
@@ -96,8 +113,9 @@ export default function PeoplePage() {
   }
 
   const filteredPeople = useMemo(() => {
-    return filterPeople(mockPeople, appliedFilters, activeQuickFilters)
-  }, [appliedFilters, activeQuickFilters])
+    if (!people) return []
+    return filterPeople(people, appliedFilters, activeQuickFilters)
+  }, [people, appliedFilters, activeQuickFilters])
 
   // Calculate statistics based on filtered data
   const stats = useMemo(() => {
@@ -120,6 +138,20 @@ export default function PeoplePage() {
       coverageRate: 73,
     }
   }, [filteredPeople])
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8">
+        <p className="text-red-500 mb-4">Error loading people: {error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -145,7 +177,11 @@ export default function PeoplePage() {
           summaryExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
           <div className="px-4 md:px-8 py-4 bg-secondary/10">
-            <StatsDashboard stats={stats} />
+            {loading ? (
+              <Skeleton className="h-48" />
+            ) : (
+              <StatsDashboard stats={stats} />
+            )}
           </div>
         </div>
       </div>
@@ -158,7 +194,7 @@ export default function PeoplePage() {
           className="w-full px-4 md:px-8 py-3 flex items-center justify-between bg-card border-b border-border hover:bg-secondary/30 transition-colors"
         >
           <span className="text-sm font-medium text-muted-foreground">
-            People Directory ({filteredPeople.length} results)
+            People Directory ({loading ? '...' : filteredPeople.length} results)
           </span>
           <ChevronDown 
             className={cn(
@@ -183,8 +219,16 @@ export default function PeoplePage() {
             activeQuickFilters={activeQuickFilters}
             onQuickFilterToggle={handleQuickFilterToggle}
           />
-          <PeopleTable people={filteredPeople} />
-          <PeopleFooter total={mockPeople.length} showing={filteredPeople.length} />
+          {loading ? (
+            <div className="p-4">
+              <Skeleton className="h-64" />
+            </div>
+          ) : (
+            <>
+              <PeopleTable people={filteredPeople} />
+              <PeopleFooter total={people?.length || 0} showing={filteredPeople.length} />
+            </>
+          )}
         </div>
       </div>
     </div>

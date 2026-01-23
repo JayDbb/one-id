@@ -1,9 +1,13 @@
+"use client"
+
 import { ArrowLeft, Pencil, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { ProgramTabs } from "@/components/programs/program-tabs"
-import { mockPrograms } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { useForm } from "@/hooks/use-api"
 import { cn } from "@/lib/utils"
 
 const statusStyles: Record<string, string> = {
@@ -13,24 +17,37 @@ const statusStyles: Record<string, string> = {
   closed: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
 }
 
-function getProgramData(id: string) {
-  const program = mockPrograms.find(p => p.id === id)
-  if (!program) {
-    return {
-      ...mockPrograms[0],
-      id,
-    }
-  }
-  return program
-}
-
-export default async function ProgramDetailPage({
+export default function ProgramDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
-  const program = getProgramData(id)
+  const { id } = use(params)
+  const { data: program, loading, error } = useForm(id)
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 md:px-8 py-4 md:py-6">
+          <Skeleton className="h-24 mb-4" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !program) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
+        <p className="text-red-500 mb-4">
+          {error ? `Error loading program: ${error.message}` : 'Program not found'}
+        </p>
+        <Link href="/programs">
+          <Button variant="outline">Back to Programs</Button>
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">

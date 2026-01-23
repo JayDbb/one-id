@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { ChevronDown } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { StatsOverview } from "@/components/dashboard/stats-overview"
@@ -8,25 +8,39 @@ import { CoverageMap } from "@/components/dashboard/coverage-map"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { ProgramsOverview } from "@/components/dashboard/programs-overview"
 import { AlertsPanel } from "@/components/dashboard/alerts-panel"
-import { mockPeople, mockPrograms, mockApplications } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  useDashboardStats,
+  useApplications,
+  usePeople,
+  useForms,
+} from "@/hooks/use-api"
 
 export default function DashboardPage() {
   const [mapExpanded, setMapExpanded] = useState(true)
   const [insightsExpanded, setInsightsExpanded] = useState(true)
 
-  // Calculate stats from mock data
+  // Memoize filter objects to prevent infinite loops
+  const applicationsFilters = useMemo(() => ({ limit: 20 }), [])
+  const peopleFilters = useMemo(() => ({ limit: 1 }), [])
+
+  // Fetch data from API
+  const { data: dashboardStats, loading: statsLoading } = useDashboardStats()
+  const { data: applications, loading: applicationsLoading } = useApplications(applicationsFilters)
+  const { data: people, loading: peopleLoading } = usePeople(peopleFilters)
+  const { data: programs, loading: programsLoading } = useForms()
+
+  // Calculate stats from API data (with fallbacks)
   const stats = {
-    totalPeople: mockPeople.length,
-    totalPrograms: mockPrograms.filter(p => p.status === "active").length,
-    totalApplications: mockApplications.length,
-    deliveryRate: Math.round(
-      mockPrograms.reduce((sum, p) => sum + p.deliveryRate, 0) / mockPrograms.length
-    ),
-    peopleChange: 12,
-    programsChange: 0,
-    applicationsChange: 24,
-    deliveryChange: 3,
+    totalPeople: dashboardStats?.totalApplicants || people?.length || 0,
+    totalPrograms: programs?.filter(p => p.status === "active").length || 0,
+    totalApplications: dashboardStats?.totalApplications || applications?.length || 0,
+    deliveryRate: 85, // Default - not available in API
+    peopleChange: 12, // Default - not available in API
+    programsChange: 0, // Default - not available in API
+    applicationsChange: 24, // Default - not available in API
+    deliveryChange: 3, // Default - not available in API
   }
 
   const lastUpdated = new Date().toLocaleString("en-US", {
@@ -36,13 +50,23 @@ export default function DashboardPage() {
     minute: "2-digit",
   })
 
+  const isLoading = statsLoading || applicationsLoading || peopleLoading || programsLoading
+
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <DashboardHeader lastUpdated={lastUpdated} />
 
       {/* Stats Overview - Always visible */}
       <div className="flex-shrink-0 px-4 md:px-8 py-6 bg-background border-b border-border">
-        <StatsOverview stats={stats} />
+        {isLoading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        ) : (
+          <StatsOverview stats={stats} />
+        )}
       </div>
 
       {/* Geographic Coverage Section - Collapsible */}
@@ -97,7 +121,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Attention Required
               </h3>
-              <AlertsPanel />
+              <AlertsPanel applications={applications || []} />
             </div>
 
             {/* Two-column grid for Activity and Programs */}
@@ -106,13 +130,21 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   Application Activity
                 </h3>
-                <ActivityFeed />
+                {applicationsLoading ? (
+                  <Skeleton className="h-64" />
+                ) : (
+                  <ActivityFeed applications={applications || []} />
+                )}
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   Program Performance
                 </h3>
-                <ProgramsOverview />
+                {programsLoading ? (
+                  <Skeleton className="h-64" />
+                ) : (
+                  <ProgramsOverview programs={programs || []} />
+                )}
               </div>
             </div>
           </div>

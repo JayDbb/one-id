@@ -3,11 +3,15 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { mockPrograms } from "@/lib/mock-data"
+import type { Program } from "@/lib/mock-data"
 
-export function ProgramsOverview() {
+interface ProgramsOverviewProps {
+  programs?: Program[]
+}
+
+export function ProgramsOverview({ programs = [] }: ProgramsOverviewProps) {
   // Get top 5 programs by beneficiaries
-  const topPrograms = [...mockPrograms]
+  const topPrograms = [...programs]
     .filter(p => p.status === "active")
     .sort((a, b) => b.beneficiaries - a.beneficiaries)
     .slice(0, 5)

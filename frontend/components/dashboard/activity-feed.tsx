@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { mockApplications } from "@/lib/mock-data"
+import type { Application } from "@/lib/mock-data"
 
 const ITEMS_PER_PAGE = 5
 
@@ -24,10 +24,14 @@ const statusConfig = {
   waitlisted: { icon: Clock, color: "text-slate-500", bg: "bg-slate-500/10" },
 }
 
-export function ActivityFeed() {
+interface ActivityFeedProps {
+  applications?: Application[]
+}
+
+export function ActivityFeed({ applications = [] }: ActivityFeedProps) {
   const [currentPage, setCurrentPage] = useState(1)
   
-  const sortedApplications = [...mockApplications].sort((a, b) => 
+  const sortedApplications = [...applications].sort((a, b) => 
     new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
   )
   

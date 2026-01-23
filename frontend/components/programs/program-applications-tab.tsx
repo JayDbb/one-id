@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Search, ChevronLeft, ChevronRight, FileText, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import type { Program } from "@/lib/mock-data"
-import { mockApplications } from "@/lib/mock-data"
+import { useApplications } from "@/hooks/use-api"
 
 interface ProgramApplicationsTabProps {
   program: Program
@@ -50,20 +51,34 @@ export function ProgramApplicationsTab({ program }: ProgramApplicationsTabProps)
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   
-  // Filter applications for this program
-  const programApplications = mockApplications.filter(app => 
-    app.programId === program.id || app.programName === program.code
-  )
+  // Fetch applications filtered by this program's form_id
+  // Program id is the form_name/id from the API
+  const apiFilters = useMemo(() => ({
+    form_id: program.id, // program.id is the form_name from API
+    limit: 100, // Get more for client-side filtering
+  }), [program.id])
   
-  // If no exact matches, show some sample applications
-  const applications = programApplications.length > 0 ? programApplications : mockApplications.slice(0, 8)
+  const { data: applications, loading } = useApplications(apiFilters)
   
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.id.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(app.status)
-    return matchesSearch && matchesStatus
-  })
+  // Filter applications for this program (client-side filtering for search)
+  const filteredApplications = useMemo(() => {
+    if (!applications) return []
+    
+    return applications.filter(app => {
+      // Ensure it matches this program
+      const matchesProgram = app.programId === program.id || app.programName === program.name
+      if (!matchesProgram) return false
+      
+      // Search filter
+      const matchesSearch = app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.id.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      // Status filter
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(app.status)
+      
+      return matchesSearch && matchesStatus
+    })
+  }, [applications, program.id, program.name, searchQuery, statusFilter])
   
   const totalPages = Math.ceil(filteredApplications.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -158,31 +173,43 @@ export function ProgramApplicationsTab({ program }: ProgramApplicationsTabProps)
 
       {/* Table */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Application
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Status
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Priority
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Submitted
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Assigned To
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
-                Amount
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedApplications.map((app) => (
+        {loading ? (
+          <div className="p-4">
+            <Skeleton className="h-64" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Application
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Status
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Priority
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Submitted
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Assigned To
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
+                  Amount
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedApplications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No applications found for this program
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedApplications.map((app) => (
               <TableRow key={app.id} className="group hover:bg-secondary/50 cursor-pointer">
                 <TableCell>
                   <Link href={`/applications/${app.id}`} className="flex items-center gap-3">
@@ -215,9 +242,11 @@ export function ProgramApplicationsTab({ program }: ProgramApplicationsTabProps)
                   {formatCurrency(app.requestedAmount)}
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Pagination */}
