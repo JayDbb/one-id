@@ -46,4 +46,21 @@ export class EligibilityController {
 
     return results;
   }
+
+  @Get('form-status')
+  @HttpCode(HttpStatus.OK)
+  async getFormStatus(
+    @Query() query: GetEligibilityDto,
+  ): Promise<
+    { form_name: string; is_complete: boolean; is_eligibility: boolean }[]
+  > {
+    if (!query.phone_number) {
+      throw new BadRequestException('phone_number is required');
+    }
+
+    return this.eligibilityService.findFormStatus(
+      query.phone_number,
+      query.form_name,
+    );
+  }
 }

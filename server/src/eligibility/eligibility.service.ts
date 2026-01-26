@@ -159,6 +159,62 @@ export class EligibilityService {
     });
   }
 
+  async findFormStatus(
+    phoneNumber: string,
+    formName?: string,
+  ): Promise<
+    { form_name: string; is_complete: boolean; is_eligibility: boolean }[]
+  > {
+    const normalizedFormName =
+      typeof formName === 'string' ? formName.trim() : '';
+    const formNames =
+      normalizedFormName.length > 0
+        ? [normalizedFormName]
+        : await this.formService.findFormNames({});
+    const userId = await this.formService.findUserIdByPhoneNumber(phoneNumber);
+    const appliedFormIds = userId
+      ? await this.applicationsService.findFormIdsByApplicantId(userId)
+      : [];
+    const appliedSet = new Set(appliedFormIds);
+
+    const statuses: {
+      form_name: string;
+      is_complete: boolean;
+      is_eligibility: boolean;
+    }[] = [];
+
+    for (const formName of formNames) {
+      let isComplete = false;
+      if (!appliedSet.has(formName)) {
+        const missing = await this.formService.findFormRequirements({
+          form_name: formName,
+          phone_number: phoneNumber,
+        });
+        if (missing && missing.length === 0) {
+          isComplete = true;
+        }
+      }
+
+      const eligibilityInfo = await this.findEligibilityInfo(
+        phoneNumber,
+        formName,
+      );
+      const isEligibility =
+        eligibilityInfo.length > 0 &&
+        eligibilityInfo.every(
+          (entry) => (entry as { valid?: unknown }).valid === true,
+        );
+
+      statuses.push({
+        form_name: formName,
+        is_complete: isComplete,
+        is_eligibility: isEligibility,
+      });
+    }
+
+    return statuses;
+  }
+
   private parsePolicy(policy: unknown): unknown | null {
     if (!policy) {
       return null;
