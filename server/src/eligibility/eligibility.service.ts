@@ -44,7 +44,10 @@ export class EligibilityService {
       fields: 'form_name,policy',
       formName,
     });
-    const criteria: { field_id: string; op: string; values?: string[] }[] = [];
+    const criteria: {
+      field_id: string;
+      criteria: { op: string; values?: string[] };
+    }[] = [];
 
     for (const form of forms) {
       const policy = this.parsePolicy(form.policy);
@@ -85,10 +88,12 @@ export class EligibilityService {
                 : undefined;
             criteria.push({
               field_id: fieldId,
-              op,
-              values: Array.isArray(values)
-                ? values.map((item) => String(item))
-                : undefined,
+              criteria: {
+                op,
+                values: Array.isArray(values)
+                  ? values.map((item) => String(item))
+                  : undefined,
+              },
             });
           }
         }
@@ -118,10 +123,12 @@ export class EligibilityService {
           ) {
             criteria.push({
               field_id: fieldId,
-              op,
-              values: Array.isArray(values)
-                ? values.map((item) => String(item))
-                : undefined,
+              criteria: {
+                op,
+                values: Array.isArray(values)
+                  ? values.map((item) => String(item))
+                  : undefined,
+              },
             });
           }
         }
@@ -146,8 +153,8 @@ export class EligibilityService {
       return {
         field_id: entry.field_id,
         value,
-        op: entry.op,
-        valid: this.evaluateCriterion(entry.op, value, entry.values),
+        criteria: entry.criteria,
+        valid: this.evaluateCriterion(entry.criteria, value),
       };
     });
   }
@@ -171,11 +178,10 @@ export class EligibilityService {
   }
 
   private evaluateCriterion(
-    op: string,
+    criteria: { op: string; values?: string[] },
     value: string[] | null,
-    values?: string[],
   ): boolean {
-    switch (op) {
+    switch (criteria.op) {
       case 'exists': {
         return Array.isArray(value)
           ? value.some((item) => item.trim().length > 0)
@@ -199,10 +205,14 @@ export class EligibilityService {
         });
       }
       case 'in': {
-        if (!Array.isArray(value) || !values || values.length === 0) {
+        if (
+          !Array.isArray(value) ||
+          !criteria.values ||
+          criteria.values.length === 0
+        ) {
           return false;
         }
-        const allowed = new Set(values);
+        const allowed = new Set(criteria.values);
         return value.some((item) => allowed.has(item));
       }
       default:
