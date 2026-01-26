@@ -2,224 +2,164 @@
 
 import React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useRef } from "react"
 import {
   Baby,
   Users,
-  UserRound,
-  Briefcase,
   GraduationCap,
+  Briefcase,
+  Heart,
   Home,
-  Stethoscope,
   Utensils,
+  Stethoscope,
+  BookOpen,
+  Landmark,
   HandCoins,
-  ShieldAlert,
+  UserCheck,
   Accessibility,
-  PersonStanding,
+  Users2,
+  Clock,
   ChevronLeft,
   ChevronRight,
-  Heart,
-  HeartHandshake,
-  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-export interface FilterItem {
+export interface FilterCard {
   id: string
   label: string
-  icon: React.ReactNode
-  category: "demographics" | "programs" | "special"
+  icon: React.ElementType
+  category: "demographic" | "program"
+  color: string
 }
 
-const ALL_FILTERS: FilterItem[] = [
+export const FILTER_CARDS: FilterCard[] = [
   // Demographics
-  { id: "children", label: "Children (0-12)", icon: <Baby className="size-3.5" />, category: "demographics" },
-  { id: "youth", label: "Youth (13-24)", icon: <PersonStanding className="size-3.5" />, category: "demographics" },
-  { id: "adults", label: "Adults (25-59)", icon: <UserRound className="size-3.5" />, category: "demographics" },
-  { id: "seniors", label: "Senior Citizens (60+)", icon: <Accessibility className="size-3.5" />, category: "demographics" },
-  { id: "disabled", label: "Persons with Disabilities", icon: <Accessibility className="size-3.5" />, category: "demographics" },
-  { id: "dependents", label: "Dependents & Caregivers", icon: <HeartHandshake className="size-3.5" />, category: "demographics" },
-  
-  // Support Programs
-  { id: "cash-assistance", label: "Cash Assistance", icon: <HandCoins className="size-3.5" />, category: "programs" },
-  { id: "employment", label: "Employment & Training", icon: <Briefcase className="size-3.5" />, category: "programs" },
-  { id: "education", label: "Education Support", icon: <GraduationCap className="size-3.5" />, category: "programs" },
-  { id: "healthcare", label: "Healthcare & Wellness", icon: <Stethoscope className="size-3.5" />, category: "programs" },
-  { id: "housing", label: "Housing & Shelter", icon: <Home className="size-3.5" />, category: "programs" },
-  { id: "food", label: "Food & Nutrition", icon: <Utensils className="size-3.5" />, category: "programs" },
-  
-  // Special Focus / Status
-  { id: "at-risk", label: "At-Risk Individuals", icon: <ShieldAlert className="size-3.5" />, category: "special" },
-  { id: "single-parents", label: "Single Parents", icon: <UserRound className="size-3.5" />, category: "special" },
-  { id: "community", label: "Community Support", icon: <Users className="size-3.5" />, category: "special" },
+  { id: "children", label: "Children", icon: Baby, category: "demographic", color: "bg-pink-500" },
+  { id: "youth", label: "Youth", icon: GraduationCap, category: "demographic", color: "bg-purple-500" },
+  { id: "adults", label: "Adults", icon: Briefcase, category: "demographic", color: "bg-blue-500" },
+  { id: "seniors", label: "Seniors", icon: Clock, category: "demographic", color: "bg-amber-500" },
+  { id: "single-parents", label: "Single Parents", icon: Heart, category: "demographic", color: "bg-rose-500" },
+  { id: "dependents", label: "Dependents", icon: Users2, category: "demographic", color: "bg-indigo-500" },
+  { id: "disabled", label: "Disabled", icon: Accessibility, category: "demographic", color: "bg-teal-500" },
+  // Programs
+  { id: "path", label: "PATH", icon: HandCoins, category: "program", color: "bg-emerald-500" },
+  { id: "housing", label: "Housing", icon: Home, category: "program", color: "bg-cyan-500" },
+  { id: "employment", label: "Employment", icon: UserCheck, category: "program", color: "bg-orange-500" },
+  { id: "food-support", label: "Food Support", icon: Utensils, category: "program", color: "bg-lime-500" },
+  { id: "healthcare", label: "Healthcare", icon: Stethoscope, category: "program", color: "bg-red-500" },
+  { id: "education", label: "Education", icon: BookOpen, category: "program", color: "bg-violet-500" },
+  { id: "pension", label: "Pension", icon: Landmark, category: "program", color: "bg-slate-500" },
+  { id: "nht", label: "NHT", icon: Home, category: "program", color: "bg-sky-500" },
+  { id: "social-pension", label: "Social Pension", icon: Users, category: "program", color: "bg-fuchsia-500" },
 ]
 
-const STORAGE_KEY = "filter-gallery-recent"
-
 interface FilterGalleryProps {
-  activeFilters: string[]
+  selectedFilters: string[]
   onFilterToggle: (filterId: string) => void
+  recentFilters: string[]
 }
 
-export function FilterGallery({ activeFilters, onFilterToggle }: FilterGalleryProps) {
+export function FilterGallery({ selectedFilters, onFilterToggle, recentFilters }: FilterGalleryProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
-  const [recentFilters, setRecentFilters] = useState<string[]>([])
-
-  // Load recent filters from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setRecentFilters(JSON.parse(stored))
-      } catch {
-        setRecentFilters([])
-      }
-    }
-  }, [])
-
-  // Sort filters: recent first, then alphabetically by category
-  const sortedFilters = [...ALL_FILTERS].sort((a, b) => {
-    const aRecentIndex = recentFilters.indexOf(a.id)
-    const bRecentIndex = recentFilters.indexOf(b.id)
-    
-    // Both are recent - sort by recency
-    if (aRecentIndex !== -1 && bRecentIndex !== -1) {
-      return aRecentIndex - bRecentIndex
-    }
-    // Only a is recent
-    if (aRecentIndex !== -1) return -1
-    // Only b is recent
-    if (bRecentIndex !== -1) return 1
-    
-    // Neither is recent - sort by category then alphabetically
-    const categoryOrder = { demographics: 0, programs: 1, special: 2 }
-    if (categoryOrder[a.category] !== categoryOrder[b.category]) {
-      return categoryOrder[a.category] - categoryOrder[b.category]
-    }
-    return a.label.localeCompare(b.label)
-  })
-
-  const handleFilterClick = (filterId: string) => {
-    // Update recent filters
-    const newRecent = [filterId, ...recentFilters.filter(id => id !== filterId)].slice(0, 5)
-    setRecentFilters(newRecent)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRecent))
-    
-    onFilterToggle(filterId)
-  }
-
-  const checkScroll = () => {
-    const container = scrollContainerRef.current
-    if (container) {
-      setCanScrollLeft(container.scrollLeft > 0)
-      setCanScrollRight(
-        container.scrollLeft < container.scrollWidth - container.clientWidth - 1
-      )
-    }
-  }
-
-  useEffect(() => {
-    checkScroll()
-    const container = scrollContainerRef.current
-    if (container) {
-      container.addEventListener("scroll", checkScroll)
-      window.addEventListener("resize", checkScroll)
-    }
-    return () => {
-      container?.removeEventListener("scroll", checkScroll)
-      window.removeEventListener("resize", checkScroll)
-    }
-  }, [])
 
   const scroll = (direction: "left" | "right") => {
-    const container = scrollContainerRef.current
-    if (container) {
+    if (scrollContainerRef.current) {
       const scrollAmount = 200
-      container.scrollBy({
+      scrollContainerRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
       })
     }
   }
 
-  const getCategoryStyles = (category: FilterItem["category"], isActive: boolean) => {
-    if (isActive) {
-      return {
-        demographics: "bg-blue-600 text-white border-blue-600 hover:bg-blue-700",
-        programs: "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700",
-        special: "bg-amber-600 text-white border-amber-600 hover:bg-amber-700",
-      }[category]
+  // Sort filters: recent ones first, then alphabetically
+  const sortedFilters = [...FILTER_CARDS].sort((a, b) => {
+    const aRecentIndex = recentFilters.indexOf(a.id)
+    const bRecentIndex = recentFilters.indexOf(b.id)
+    
+    // If both are recent, sort by recency
+    if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+      return aRecentIndex - bRecentIndex
     }
-    return {
-      demographics: "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-950 dark:hover:bg-blue-900 dark:border-blue-800 dark:text-blue-300",
-      programs: "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:border-emerald-800 dark:text-emerald-300",
-      special: "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-950 dark:hover:bg-amber-900 dark:border-amber-800 dark:text-amber-300",
-    }[category]
-  }
+    // If only a is recent, it comes first
+    if (aRecentIndex !== -1) return -1
+    // If only b is recent, it comes first
+    if (bRecentIndex !== -1) return 1
+    // Otherwise, sort alphabetically
+    return a.label.localeCompare(b.label)
+  })
 
   return (
-    <div className="relative px-4 md:px-8 py-3 bg-card border-b border-border">
-      {/* Scroll Left Button */}
-      {canScrollLeft && (
-        <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 md:pl-2 bg-gradient-to-r from-card via-card to-transparent pr-6">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7 rounded-full bg-card shadow-md border-border"
-            onClick={() => scroll("left")}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-        </div>
-      )}
+    <div className="relative group">
+      {/* Left scroll button */}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => scroll("left")}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 size-8 rounded-full bg-card/95 backdrop-blur-sm border-border shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+      >
+        <ChevronLeft className="size-4" />
+      </Button>
 
-      {/* Scrollable Container */}
+      {/* Scrollable container */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth py-0.5"
+        className="flex gap-2 overflow-x-auto scrollbar-hide py-0.5 px-1 -mx-1 snap-x snap-mandatory"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {sortedFilters.map((filter) => {
-          const isActive = activeFilters.includes(filter.id)
+          const isSelected = selectedFilters.includes(filter.id)
           const isRecent = recentFilters.includes(filter.id)
-          
+          const Icon = filter.icon
+
           return (
             <button
               key={filter.id}
-              type="button"
-              onClick={() => handleFilterClick(filter.id)}
+              onClick={() => onFilterToggle(filter.id)}
               className={cn(
-                "flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-200",
-                getCategoryStyles(filter.category, isActive),
-                isRecent && !isActive && "ring-1 ring-offset-1 ring-primary/30"
+                "flex-shrink-0 snap-start flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border transition-all duration-200",
+                "hover:scale-[1.02] active:scale-[0.98]",
+                isSelected
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-card hover:border-primary/30 hover:bg-secondary/50",
+                isRecent && !isSelected && "ring-1 ring-primary/20"
               )}
             >
-              {filter.icon}
-              <span className="whitespace-nowrap">{filter.label}</span>
-              {isActive && (
-                <X className="size-3 ml-0.5 opacity-70" />
-              )}
+              <div
+                className={cn(
+                  "flex items-center justify-center size-5 rounded-full transition-colors",
+                  isSelected ? filter.color : "bg-muted"
+                )}
+              >
+                <Icon className={cn("size-3", isSelected ? "text-white" : "text-muted-foreground")} />
+              </div>
+              <span
+                className={cn(
+                  "text-[11px] font-medium whitespace-nowrap",
+                  isSelected ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {filter.label}
+              </span>
             </button>
           )
         })}
       </div>
 
-      {/* Scroll Right Button */}
-      {canScrollRight && (
-        <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 md:pr-2 bg-gradient-to-l from-card via-card to-transparent pl-6">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7 rounded-full bg-card shadow-md border-border"
-            onClick={() => scroll("right")}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      )}
+      {/* Right scroll button */}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => scroll("right")}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 size-8 rounded-full bg-card/95 backdrop-blur-sm border-border shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+      >
+        <ChevronRight className="size-4" />
+      </Button>
+
+      {/* Fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-card to-transparent pointer-events-none hidden md:block" />
+      <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-card to-transparent pointer-events-none hidden md:block" />
     </div>
   )
 }

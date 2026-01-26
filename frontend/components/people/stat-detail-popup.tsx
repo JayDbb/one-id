@@ -1,6 +1,7 @@
 "use client"
 
 import { X, TrendingUp, TrendingDown, Calendar, DollarSign, Users, FileCheck, Clock, CheckCircle, XCircle, ArrowRight } from "lucide-react"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -30,6 +31,7 @@ export interface StatDetailData {
   timeline?: TimelineEvent[]
   eligibility?: { criterion: string; met: boolean; details?: string }[]
   additionalStats?: { label: string; value: string | number }[]
+  applicationId?: string
 }
 
 interface StatDetailPopupProps {
@@ -295,11 +297,20 @@ export function StatDetailPopup({ isOpen, onClose, data }: StatDetailPopupProps)
             </div>
           )}
 
-          {/* View All Link */}
-          <Button variant="outline" className="w-full gap-2 bg-transparent">
-            View Full Report
-            <ArrowRight className="size-4" />
-          </Button>
+          {/* View Application Link */}
+          {data.applicationId ? (
+            <Link href={`/applications/${data.applicationId}`} className="w-full">
+              <Button variant="outline" className="w-full gap-2 bg-transparent">
+                View Full Application
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" className="w-full gap-2 bg-transparent">
+              View Full Report
+              <ArrowRight className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
     </>

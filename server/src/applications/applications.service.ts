@@ -54,23 +54,26 @@ export class ApplicationsService {
         app.applicant,
       );
 
-      if (facts.length === 0) continue;
+      // If no facts found, still include the application with default values
+      // This allows applications to be displayed even if facts haven't been populated yet
 
       // Extract applicant details - group by field_id
       const factMap = new Map<string, string>();
-      facts.forEach((fact) => {
-        // Handle value as array or string
-        let value: string | undefined;
-        if (Array.isArray(fact.value)) {
-          value = fact.value.length > 0 ? fact.value[0] : undefined;
-        } else if (fact.value) {
-          value = String(fact.value);
-        }
-        
-        if (value) {
-          factMap.set(fact.field_id, value);
-        }
-      });
+      if (facts && facts.length > 0) {
+        facts.forEach((fact) => {
+          // Handle value as array or string
+          let value: string | undefined;
+          if (Array.isArray(fact.value)) {
+            value = fact.value.length > 0 ? fact.value[0] : undefined;
+          } else if (fact.value) {
+            value = String(fact.value);
+          }
+          
+          if (value) {
+            factMap.set(fact.field_id, value);
+          }
+        });
+      }
 
       const applicantDivision = factMap.get(this.FIELD_IDS.DIVISION) || '';
 
@@ -79,11 +82,11 @@ export class ApplicationsService {
         continue;
       }
 
-      // Get form name (use shorten_name for tables)
+      // Get form name (use form_name for list views)
       const form = await this.applicationsRepository.findFormByName(
         app.form_id,
       );
-      const formName = form?.shorten_name || form?.form_name || app.form_id;
+      const formName = form?.form_name || app.form_id;
 
       applicationList.push({
         id: app.id,
@@ -133,12 +136,14 @@ export class ApplicationsService {
     // Extract applicant details
     const factMap = new Map<string, string>();
     const applicantFacts: Record<string, any> = {};
-    facts.forEach((fact) => {
-      if (fact.value && fact.value.length > 0) {
-        factMap.set(fact.field_id, fact.value[0]);
-        applicantFacts[fact.field_id] = fact.value;
-      }
-    });
+    if (facts && facts.length > 0) {
+      facts.forEach((fact) => {
+        if (fact.value && fact.value.length > 0) {
+          factMap.set(fact.field_id, fact.value[0]);
+          applicantFacts[fact.field_id] = fact.value;
+        }
+      });
+    }
 
     // Get form details
     const form = await this.applicationsRepository.findFormByName(app.form_id);
@@ -148,7 +153,7 @@ export class ApplicationsService {
       applicantId: app.applicant,
       applicantName: factMap.get(this.FIELD_IDS.FULL_NAME) || 'N/A',
       citizenId: factMap.get(this.FIELD_IDS.NATIONAL_ID) || 'N/A',
-      applicationName: form?.shorten_name || form?.form_name || app.form_id,
+      applicationName: form?.form_name || app.form_id,
       formId: app.form_id,
       dateApplied: new Date(app.created_at).toLocaleDateString('en-US', {
         month: 'short',

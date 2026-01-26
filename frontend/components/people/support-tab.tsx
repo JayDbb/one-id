@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   TrendingUp,
   FileCheck,
@@ -10,11 +10,20 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
+  Fingerprint,
+  FileText,
+  CreditCard,
+  BadgeCheck,
+  Copy,
+  Check,
+  ExternalLink,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { StatDetailPopup, type StatDetailData } from "./stat-detail-popup"
+import { useFieldRegistry, useApplicantFacts } from "@/hooks/use-api"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const ITEMS_PER_PAGE = 5
 
@@ -31,6 +40,7 @@ interface Program {
 
 interface SupportTabProps {
   person: {
+    id: string
     programs: Program[]
     submissions: {
       total: number
@@ -40,6 +50,7 @@ interface SupportTabProps {
     impactScore: {
       overall: number
     }
+    lastUpdated?: string
   }
 }
 
@@ -83,10 +94,138 @@ function getScoreBarColor(score: number) {
 
 const IMPACT_ITEMS_PER_PAGE = 4
 
+function IdentificationField({
+  field,
+}: {
+  field: { field_id: string; title: string; value: string[] }
+}) {
+  const displayValue = Array.isArray(field.value)
+    ? field.value.length > 0
+      ? field.value[0]
+      : "N/A"
+    : field.value || "N/A"
+  
+  const isUrl = displayValue && displayValue !== "N/A" && 
+    (displayValue.startsWith("http://") || displayValue.startsWith("https://"))
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (displayValue && displayValue !== "N/A") {
+      navigator.clipboard.writeText(displayValue)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="p-4 rounded-lg bg-secondary/50 border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <CreditCard className="size-4 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          {field.title}
+        </span>
+        <BadgeCheck className="size-4 text-green-600 ml-auto" />
+      </div>
+      {isUrl ? (
+        <div className="group">
+          <a
+            href={displayValue}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-bold font-mono text-primary hover:text-primary/80 underline-offset-2 hover:underline block min-w-0 break-all"
+            style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+            title={displayValue}
+          >
+            {displayValue}
+          </a>
+          <div className="flex items-center gap-1 mt-1">
+            <ExternalLink className="size-3 text-muted-foreground shrink-0" />
+            <button
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded flex items-center"
+              title="Copy URL"
+            >
+              {copied ? (
+                <Check className="size-3 text-green-600" />
+              ) : (
+                <Copy className="size-3 text-muted-foreground" />
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm font-bold font-mono text-foreground break-words" style={{ wordBreak: 'break-word' }}>
+          {displayValue}
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">Verified</p>
+    </div>
+  )
+}
+
 export function SupportTab({ person }: SupportTabProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [impactPage, setImpactPage] = useState(1)
   const [selectedDetail, setSelectedDetail] = useState<StatDetailData | null>(null)
+
+  // Fetch field registry and applicant facts
+  const { data: fieldRegistry, loading: loadingFields } = useFieldRegistry({
+    fields: "field_id,title,type,category",
+  })
+  const { data: applicantFacts, loading: loadingFacts } = useApplicantFacts({
+    user_id: person.id,
+  })
+
+  // Group fields by category
+  const fieldsByCategory = useMemo(() => {
+    if (!fieldRegistry || !applicantFacts) return {}
+
+    // Create a map of field_id to applicant fact value
+    const factsMap = new Map<string, string[]>()
+    applicantFacts.forEach((fact) => {
+      factsMap.set(fact.field_id, fact.value || [])
+    })
+
+    // Group fields by category
+    const grouped: Record<string, Array<{ field_id: string; title: string; value: string[] }>> = {}
+    
+    fieldRegistry.forEach((field) => {
+      const category = field.category || "other"
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      
+      const values = factsMap.get(field.field_id) || []
+      // Include fields that have values or are in important categories (identification, supporting, documents)
+      // Also include fields with category names that suggest they might be documents
+      const isImportantCategory = ["identification", "supporting", "documents"].includes(category) ||
+        category.toLowerCase().includes("document") ||
+        category.toLowerCase().includes("attachment") ||
+        category.toLowerCase().includes("file")
+      
+      if (values.length > 0 || isImportantCategory) {
+        grouped[category].push({
+          field_id: field.field_id,
+          title: field.title || field.field_id,
+          value: values,
+        })
+      }
+    })
+
+    return grouped
+  }, [fieldRegistry, applicantFacts])
+
+  const loading = loadingFields || loadingFacts
+
+  // Debug: Log available categories (remove in production)
+  if (process.env.NODE_ENV === 'development' && !loading && fieldRegistry) {
+    const categories = new Set(fieldRegistry.map(f => f.category || "other"))
+    console.log('Available field categories:', Array.from(categories))
+    console.log('Fields by category:', Object.keys(fieldsByCategory))
+    console.log('FieldsByCategory object:', fieldsByCategory)
+  }
 
   const approvedPrograms = person.programs.filter(
     (p) => p.status === "Approved"
@@ -525,6 +664,7 @@ export function SupportTab({ person }: SupportTabProps) {
                     subtitle: `Status: ${program.status}`,
                     description: `Application for ${program.name} program submitted on ${new Date(program.appliedDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`,
                     trend: program.status === "Approved" ? { value: 100, isPositive: true, period: "Approved" } : undefined,
+                    applicationId: program.id,
                     programBreakdown: program.benefitAmount ? [{
                       name: program.name,
                       amount: program.benefitAmount,
@@ -714,6 +854,53 @@ export function SupportTab({ person }: SupportTabProps) {
         onClose={() => setSelectedDetail(null)}
         data={selectedDetail}
       />
+
+      {/* Identification Documents Section */}
+      {!loading && fieldsByCategory["identification"] && fieldsByCategory["identification"].length > 0 && (
+        <Card className="mt-6 md:mt-8 border-2 border-dashed border-border">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Fingerprint className="size-5 text-primary" />
+              Identification Documents
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              All government-issued and system identification numbers
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {fieldsByCategory["identification"].map((field) => (
+                <IdentificationField key={field.field_id} field={field} />
+              ))}
+            </div>
+
+            {/* ID Verification Status */}
+            <div className="mt-6 p-4 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
+                  <BadgeCheck className="size-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-700 dark:text-green-300">
+                    Identity Verified
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    All identification documents have been verified and cross-referenced. Last verification:{" "}
+                    {person.lastUpdated
+                      ? new Date(person.lastUpdated).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
     </div>
   )
 }

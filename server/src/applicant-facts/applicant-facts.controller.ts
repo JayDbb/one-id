@@ -46,6 +46,11 @@ export class ApplicantFactsController {
   ): Promise<ApplicantFact[]> {
     const results = await this.applicantFactsService.findByQuery(query);
 
+    // If querying by user_id, return empty array instead of 404
+    if (results.length === 0 && query.user_id) {
+      return [];
+    }
+
     if (results.length === 0) {
       throw new NotFoundException(
         'No applicant facts found matching the criteria',

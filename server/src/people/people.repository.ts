@@ -79,7 +79,13 @@ export class PeopleRepository {
       throw new Error(`Failed to fetch forms: ${error.message}`);
     }
 
-    return data || [];
+    // Filter out forms with shorten_name of "Registration" (case-insensitive, trimmed)
+    const filtered = (data || []).filter((form) => {
+      const shortenName = form.shorten_name?.trim().toLowerCase();
+      return shortenName !== 'registration';
+    });
+
+    return filtered;
   }
 
   async findUserIdByTRN(trn: string): Promise<number | string | null> {

@@ -31,7 +31,7 @@ export default function ApplicationDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
-  const { data: application, loading, error } = useApplication(id)
+  const { data: application, loading, error, rawDetail } = useApplication(id)
 
   if (loading) {
     return (
@@ -127,7 +127,7 @@ export default function ApplicationDetailPage({
       </div>
 
       {/* Tabs Content */}
-      <ApplicationTabs application={application} />
+      <ApplicationTabs application={application} rawDetail={rawDetail} />
     </div>
   )
 }

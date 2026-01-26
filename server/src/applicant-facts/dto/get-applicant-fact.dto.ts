@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class GetApplicantFactDto {
   @IsOptional()
@@ -8,4 +8,8 @@ export class GetApplicantFactDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsUUID()
+  user_id?: string;
 }

@@ -11,6 +11,8 @@ import {
 } from "./advanced-filters-modal"
 import { FilterGallery } from "./filter-gallery"
 
+const STORAGE_KEY = "filter-gallery-recent"
+
 interface PeopleFiltersProps {
   appliedFilters: AdvancedFiltersState
   onFiltersApplied: (filters: AdvancedFiltersState) => void
@@ -26,6 +28,28 @@ export function PeopleFilters({
 }: PeopleFiltersProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filters, setFilters] = useState<AdvancedFiltersState>(appliedFilters)
+  const [recentFilters, setRecentFilters] = useState<string[]>([])
+
+  // Load recent filters from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      try {
+        setRecentFilters(JSON.parse(stored))
+      } catch {
+        setRecentFilters([])
+      }
+    }
+  }, [])
+
+  const handleQuickFilterToggle = (filterId: string) => {
+    // Update recent filters
+    const newRecent = [filterId, ...recentFilters.filter(id => id !== filterId)].slice(0, 5)
+    setRecentFilters(newRecent)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRecent))
+    
+    onQuickFilterToggle(filterId)
+  }
 
   // Sync local filters with applied filters when modal opens
   useEffect(() => {
@@ -56,10 +80,13 @@ export function PeopleFilters({
   return (
     <>
       {/* Filter Gallery */}
-      <FilterGallery 
-        activeFilters={activeQuickFilters}
-        onFilterToggle={onQuickFilterToggle}
-      />
+      <div className="px-4 md:px-8 py-3 bg-card border-b border-border">
+        <FilterGallery 
+          selectedFilters={activeQuickFilters}
+          onFilterToggle={handleQuickFilterToggle}
+          recentFilters={recentFilters}
+        />
+      </div>
 
       {/* Action Bar */}
       <div className="px-4 md:px-8 py-2.5 bg-secondary/30 border-b border-border flex items-center gap-3">

@@ -99,4 +99,19 @@ export class ApplicantFactsRepository {
 
     return data as ApplicantFact;
   }
+
+  async findAllByUserId(userId: string): Promise<ApplicantFact[]> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('applicant_facts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_current', true);
+
+    if (error) {
+      throw new Error(`Failed to fetch applicant facts: ${error.message}`);
+    }
+
+    return (data ?? []) as ApplicantFact[];
+  }
 }

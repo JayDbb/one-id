@@ -112,7 +112,12 @@ export class ApplicantFactsService {
   }
 
   async findByQuery(query: GetApplicantFactDto): Promise<ApplicantFact[]> {
-    const { trn, phoneNumber } = query;
+    const { trn, phoneNumber, user_id } = query;
+
+    // If user_id is provided, return all facts for that user
+    if (user_id) {
+      return this.applicantFactsRepository.findAllByUserId(user_id);
+    }
 
     // If no search parameters provided, return empty array
     if (!trn && !phoneNumber) {

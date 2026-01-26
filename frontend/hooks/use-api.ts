@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { get } from '@/lib/api-client';
+import { get, ApiError } from '@/lib/api-client';
 import type {
   ApiApplication,
   ApiApplicationDetail,
@@ -22,6 +22,10 @@ import type {
   ApiActiveForm,
   ApiFormEntity,
   ApiForm,
+  ApiFieldRegistry,
+  GetFieldRegistryParams,
+  ApiApplicantFact,
+  GetApplicantFactsParams,
 } from '@/lib/api-types';
 import {
   transformApplication,
@@ -105,8 +109,9 @@ export function useApplications(
   return { data, loading, error, refetch: fetchData };
 }
 
-export function useApplication(id: string): UseApiResult<Application> {
+export function useApplication(id: string): UseApiResult<Application> & { rawDetail: ApiApplicationDetail | null } {
   const [data, setData] = useState<Application | null>(null);
+  const [rawDetail, setRawDetail] = useState<ApiApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -121,11 +126,13 @@ export function useApplication(id: string): UseApiResult<Application> {
 
     try {
       const response = await get<ApiApplicationDetail>(`/applications/${id}`);
+      setRawDetail(response);
       const transformed = transformApplicationDetail(response);
       setData(transformed);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch application'));
       setData(null);
+      setRawDetail(null);
     } finally {
       setLoading(false);
     }
@@ -135,7 +142,7 @@ export function useApplication(id: string): UseApiResult<Application> {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, loading, error, refetch: fetchData, rawDetail };
 }
 
 // ============================================================================
@@ -199,8 +206,9 @@ export function usePeople(
   return { data, loading, error, refetch: fetchData };
 }
 
-export function usePerson(id: string): UseApiResult<Person> {
+export function usePerson(id: string): UseApiResult<Person> & { rawDetail: ApiPersonDetail | null } {
   const [data, setData] = useState<Person | null>(null);
+  const [rawDetail, setRawDetail] = useState<ApiPersonDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -215,15 +223,104 @@ export function usePerson(id: string): UseApiResult<Person> {
 
     try {
       const response = await get<ApiPersonDetail>(`/people/${id}`);
+      setRawDetail(response);
       const transformed = transformPersonDetail(response);
       setData(transformed);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch person'));
       setData(null);
+      setRawDetail(null);
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData, rawDetail };
+}
+
+// ============================================================================
+// Field Registry Hooks
+// ============================================================================
+
+export function useFieldRegistry(
+  params?: GetFieldRegistryParams,
+): UseApiResult<ApiFieldRegistry[]> {
+  const [data, setData] = useState<ApiFieldRegistry[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await get<ApiFieldRegistry[]>('/form-registry', params);
+      
+      if (!response || !Array.isArray(response)) {
+        throw new Error('Invalid response format: expected array');
+      }
+      
+      setData(response);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch field registry'));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [params?.fields]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+// ============================================================================
+// Applicant Facts Hooks
+// ============================================================================
+
+export function useApplicantFacts(
+  params?: GetApplicantFactsParams,
+): UseApiResult<ApiApplicantFact[]> {
+  const [data, setData] = useState<ApiApplicantFact[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const memoizedParams = useMemo(() => params, [
+    params?.trn,
+    params?.phoneNumber,
+    params?.user_id,
+  ]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await get<ApiApplicantFact[]>('/applicant-facts', memoizedParams);
+      
+      if (!response || !Array.isArray(response)) {
+        throw new Error('Invalid response format: expected array');
+      }
+      
+      setData(response);
+    } catch (err) {
+      // Don't treat 404 as an error if we're querying by user_id (user might not have facts yet)
+      if (err instanceof ApiError && err.statusCode === 404 && memoizedParams?.user_id) {
+        setData([]);
+      } else {
+        setError(err instanceof Error ? err : new Error('Failed to fetch applicant facts'));
+        setData(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [memoizedParams]);
 
   useEffect(() => {
     fetchData();
