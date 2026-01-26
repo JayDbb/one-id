@@ -163,7 +163,7 @@ export class EligibilityService {
     phoneNumber: string,
     formName?: string,
   ): Promise<
-    { form_name: string; is_complete: boolean; is_eligibility: boolean }[]
+    { form_name: string; is_complete: boolean; is_eligible: boolean }[]
   > {
     const normalizedFormName =
       typeof formName === 'string' ? formName.trim() : '';
@@ -180,7 +180,7 @@ export class EligibilityService {
     const statuses: {
       form_name: string;
       is_complete: boolean;
-      is_eligibility: boolean;
+      is_eligible: boolean;
     }[] = [];
 
     for (const formName of formNames) {
@@ -199,7 +199,7 @@ export class EligibilityService {
         phoneNumber,
         formName,
       );
-      const isEligibility =
+      const isEligible =
         eligibilityInfo.length > 0 &&
         eligibilityInfo.every(
           (entry) => (entry as { valid?: unknown }).valid === true,
@@ -208,7 +208,7 @@ export class EligibilityService {
       statuses.push({
         form_name: formName,
         is_complete: isComplete,
-        is_eligibility: isEligibility,
+        is_eligible: isEligible,
       });
     }
 

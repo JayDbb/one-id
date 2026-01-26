@@ -52,7 +52,7 @@ export class EligibilityController {
   async getFormStatus(
     @Query() query: GetEligibilityDto,
   ): Promise<
-    { form_name: string; is_complete: boolean; is_eligibility: boolean }[]
+    { form_name: string; is_complete: boolean; is_eligible: boolean }[]
   > {
     if (!query.phone_number) {
       throw new BadRequestException('phone_number is required');
